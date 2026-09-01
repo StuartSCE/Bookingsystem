@@ -12,7 +12,7 @@
     "nextInvoiceNumber": 1007,
     "defaultDepositPercent": 25,
     "paymentTermsDays": 14,
-    "enquiryThankYou": "Thanks — your enquiry has been received. We’ll be in touch shortly.",
+    "enquiryThankYou": "Thanks \u2014 your enquiry has been received. We\u2019ll be in touch shortly.",
     "terms": "Bookings are confirmed once the contract is accepted and any required deposit is paid."
   },
   "enquiries": [
@@ -57,7 +57,14 @@
       "phone": "07700 910101",
       "address": "Chichester, West Sussex",
       "source": "Referral",
-      "notes": "Prefers email"
+      "notes": "Prefers email",
+      "title": "",
+      "firstName": "Emma",
+      "surname": "& Jack Wilson",
+      "jobTitle": "",
+      "telephone": "07700 910101",
+      "mobile": "",
+      "website": ""
     },
     {
       "id": "cus_demo2",
@@ -68,7 +75,14 @@
       "phone": "023 9000 1000",
       "address": "Portsmouth, Hampshire",
       "source": "Google",
-      "notes": "Corporate client"
+      "notes": "Corporate client",
+      "title": "",
+      "firstName": "Harbour",
+      "surname": "Events Ltd",
+      "jobTitle": "",
+      "telephone": "023 9000 1000",
+      "mobile": "",
+      "website": ""
     }
   ],
   "bookings": [
@@ -112,7 +126,9 @@
       "deposit": 111.25,
       "balance": 333.75,
       "notes": "Includes early setup",
-      "assignedPerformerIds": ["perf_demo1"]
+      "assignedPerformerIds": [
+        "perf_demo1"
+      ]
     },
     {
       "id": "book_demo3",
@@ -235,7 +251,7 @@
       "createdAt": "2026-01-01T09:00:00.000Z",
       "name": "New enquiry reply",
       "subject": "Thanks for your enquiry, [[first]]",
-      "body": "Hi [[first]],\n\nThanks for getting in touch about [[eventTitle]] on [[eventDate]]. I’ve received your enquiry and will come back to you shortly.\n\nBest wishes,\n[[businessName]]"
+      "body": "Hi [[first]],\n\nThanks for getting in touch about [[eventTitle]] on [[eventDate]]. I\u2019ve received your enquiry and will come back to you shortly.\n\nBest wishes,\n[[businessName]]"
     },
     {
       "id": "mail_demo2",
