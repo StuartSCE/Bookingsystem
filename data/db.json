@@ -1,0 +1,283 @@
+{
+  "settings": {
+    "businessName": "South Coast Events",
+    "businessEmail": "hello@example.com",
+    "businessPhone": "",
+    "businessAddress": "",
+    "vatNumber": "",
+    "currency": "GBP",
+    "accent": "#6d5dfc",
+    "logoUrl": "",
+    "invoicePrefix": "INV-",
+    "nextInvoiceNumber": 1007,
+    "defaultDepositPercent": 25,
+    "paymentTermsDays": 14,
+    "enquiryThankYou": "Thanks — your enquiry has been received. We’ll be in touch shortly.",
+    "terms": "Bookings are confirmed once the contract is accepted and any required deposit is paid."
+  },
+  "enquiries": [
+    {
+      "id": "enq_demo1",
+      "createdAt": "2026-08-29T10:15:00.000Z",
+      "status": "New",
+      "name": "Sophie Carter",
+      "email": "sophie@example.com",
+      "phone": "07700 900123",
+      "eventDate": "2026-10-17",
+      "eventType": "Wedding",
+      "venue": "Southdowns Manor",
+      "service": "Magic Mirror",
+      "budget": 595,
+      "source": "Website",
+      "notes": "Evening reception, approx 120 guests"
+    },
+    {
+      "id": "enq_demo2",
+      "createdAt": "2026-08-30T13:40:00.000Z",
+      "status": "Contacted",
+      "name": "Marcus Green",
+      "email": "marcus@example.com",
+      "phone": "07700 900456",
+      "eventDate": "2026-11-07",
+      "eventType": "Birthday",
+      "venue": "Portsmouth Guildhall",
+      "service": "Selfie Pod",
+      "budget": 345,
+      "source": "Instagram",
+      "notes": "21st birthday"
+    }
+  ],
+  "customers": [
+    {
+      "id": "cus_demo1",
+      "createdAt": "2026-03-11T09:00:00.000Z",
+      "name": "Emma & Jack Wilson",
+      "company": "",
+      "email": "emma.wilson@example.com",
+      "phone": "07700 910101",
+      "address": "Chichester, West Sussex",
+      "source": "Referral",
+      "notes": "Prefers email"
+    },
+    {
+      "id": "cus_demo2",
+      "createdAt": "2026-04-02T09:00:00.000Z",
+      "name": "Harbour Events Ltd",
+      "company": "Harbour Events Ltd",
+      "email": "events@harbour.example.com",
+      "phone": "023 9000 1000",
+      "address": "Portsmouth, Hampshire",
+      "source": "Google",
+      "notes": "Corporate client"
+    }
+  ],
+  "bookings": [
+    {
+      "id": "book_demo1",
+      "createdAt": "2026-04-05T11:00:00.000Z",
+      "customerId": "cus_demo1",
+      "customerName": "Emma & Jack Wilson",
+      "title": "Wilson Wedding",
+      "eventType": "Wedding",
+      "eventDate": "2026-09-26",
+      "startTime": "18:00",
+      "endTime": "22:00",
+      "venue": "Upwaltham Barns",
+      "serviceId": "svc_demo1",
+      "serviceName": "Magic Mirror Wedding Package",
+      "status": "Confirmed",
+      "contractStatus": "Accepted",
+      "total": 595,
+      "deposit": 148.75,
+      "balance": 446.25,
+      "notes": "Set up before guests enter room",
+      "assignedPerformerIds": []
+    },
+    {
+      "id": "book_demo2",
+      "createdAt": "2026-05-09T11:00:00.000Z",
+      "customerId": "cus_demo2",
+      "customerName": "Harbour Events Ltd",
+      "title": "Autumn Awards Night",
+      "eventType": "Corporate",
+      "eventDate": "2026-10-09",
+      "startTime": "19:00",
+      "endTime": "23:00",
+      "venue": "The Queens Hotel, Portsmouth",
+      "serviceId": "svc_demo2",
+      "serviceName": "Selfie Pod + Printer",
+      "status": "Contract Issued",
+      "contractStatus": "Sent",
+      "total": 445,
+      "deposit": 111.25,
+      "balance": 333.75,
+      "notes": "Includes early setup",
+      "assignedPerformerIds": ["perf_demo1"]
+    },
+    {
+      "id": "book_demo3",
+      "createdAt": "2026-07-12T11:00:00.000Z",
+      "customerId": "cus_demo1",
+      "customerName": "Emma & Jack Wilson",
+      "title": "Post-wedding Party",
+      "eventType": "Party",
+      "eventDate": "2026-12-05",
+      "startTime": "20:00",
+      "endTime": "23:00",
+      "venue": "Chichester",
+      "serviceId": "svc_demo3",
+      "serviceName": "Selfie Pod - Digital",
+      "status": "Date Held",
+      "contractStatus": "Draft",
+      "total": 295,
+      "deposit": 73.75,
+      "balance": 221.25,
+      "notes": "",
+      "assignedPerformerIds": []
+    }
+  ],
+  "invoices": [
+    {
+      "id": "inv_demo1",
+      "createdAt": "2026-04-05T11:05:00.000Z",
+      "number": "INV-1005",
+      "bookingId": "book_demo1",
+      "customerId": "cus_demo1",
+      "customerName": "Emma & Jack Wilson",
+      "type": "Deposit",
+      "issueDate": "2026-04-05",
+      "dueDate": "2026-04-19",
+      "amount": 148.75,
+      "status": "Paid",
+      "paidAt": "2026-04-06T10:30:00.000Z",
+      "description": "Deposit - Wilson Wedding"
+    },
+    {
+      "id": "inv_demo2",
+      "createdAt": "2026-08-10T11:05:00.000Z",
+      "number": "INV-1006",
+      "bookingId": "book_demo1",
+      "customerId": "cus_demo1",
+      "customerName": "Emma & Jack Wilson",
+      "type": "Balance",
+      "issueDate": "2026-08-10",
+      "dueDate": "2026-09-12",
+      "amount": 446.25,
+      "status": "Sent",
+      "paidAt": null,
+      "description": "Final balance - Wilson Wedding"
+    }
+  ],
+  "payments": [
+    {
+      "id": "pay_demo1",
+      "createdAt": "2026-04-06T10:30:00.000Z",
+      "invoiceId": "inv_demo1",
+      "invoiceNumber": "INV-1005",
+      "customerName": "Emma & Jack Wilson",
+      "amount": 148.75,
+      "method": "Card",
+      "reference": "demo-payment",
+      "date": "2026-04-06"
+    }
+  ],
+  "services": [
+    {
+      "id": "svc_demo1",
+      "createdAt": "2026-01-01T09:00:00.000Z",
+      "name": "Magic Mirror Wedding Package",
+      "category": "Photobooth",
+      "price": 595,
+      "durationHours": 4,
+      "depositPercent": 25,
+      "active": true,
+      "description": "4 hours, attendant, backdrop and guest book"
+    },
+    {
+      "id": "svc_demo2",
+      "createdAt": "2026-01-01T09:00:00.000Z",
+      "name": "Selfie Pod + Printer",
+      "category": "Photobooth",
+      "price": 345,
+      "durationHours": 3,
+      "depositPercent": 25,
+      "active": true,
+      "description": "3 hours with printer and backdrop"
+    },
+    {
+      "id": "svc_demo3",
+      "createdAt": "2026-01-01T09:00:00.000Z",
+      "name": "Selfie Pod - Digital",
+      "category": "Photobooth",
+      "price": 295,
+      "durationHours": 3,
+      "depositPercent": 25,
+      "active": true,
+      "description": "3 hours, digital sharing, backdrop"
+    }
+  ],
+  "performers": [
+    {
+      "id": "perf_demo1",
+      "createdAt": "2026-03-01T09:00:00.000Z",
+      "name": "Alex Morgan",
+      "email": "alex@example.com",
+      "phone": "07700 911111",
+      "role": "Booth Attendant",
+      "defaultFee": 85,
+      "active": true,
+      "notes": "Available most weekends"
+    }
+  ],
+  "emailTemplates": [
+    {
+      "id": "mail_demo1",
+      "createdAt": "2026-01-01T09:00:00.000Z",
+      "name": "New enquiry reply",
+      "subject": "Thanks for your enquiry, [[first]]",
+      "body": "Hi [[first]],\n\nThanks for getting in touch about [[eventTitle]] on [[eventDate]]. I’ve received your enquiry and will come back to you shortly.\n\nBest wishes,\n[[businessName]]"
+    },
+    {
+      "id": "mail_demo2",
+      "createdAt": "2026-01-01T09:00:00.000Z",
+      "name": "Balance reminder",
+      "subject": "Your balance is due for [[eventTitle]]",
+      "body": "Hi [[first]],\n\nJust a friendly reminder that the balance for [[eventTitle]] is now due.\n\nThanks,\n[[businessName]]"
+    }
+  ],
+  "automations": [
+    {
+      "id": "auto_demo1",
+      "createdAt": "2026-01-01T09:00:00.000Z",
+      "name": "Enquiry follow-up",
+      "trigger": "New enquiry",
+      "delayDays": 2,
+      "templateId": "mail_demo1",
+      "active": true
+    },
+    {
+      "id": "auto_demo2",
+      "createdAt": "2026-01-01T09:00:00.000Z",
+      "name": "Review request",
+      "trigger": "Event completed",
+      "delayDays": 3,
+      "templateId": "mail_demo1",
+      "active": true
+    }
+  ],
+  "documents": [],
+  "activities": [
+    {
+      "id": "act_demo1",
+      "createdAt": "2026-08-30T13:40:00.000Z",
+      "type": "enquiry",
+      "text": "New enquiry from Marcus Green"
+    },
+    {
+      "id": "act_demo2",
+      "createdAt": "2026-08-10T11:05:00.000Z",
+      "type": "invoice",
+      "text": "Invoice INV-1006 created"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: eventflow-crm
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: AUTH_REQUIRED
+        value: "false"
+      - key: JWT_SECRET
+        generateValue: true

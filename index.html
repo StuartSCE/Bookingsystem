@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#6d5dfc" />
+  <title>EventFlow CRM</title>
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <div id="appShell" class="app-shell">
+    <aside class="sidebar">
+      <div class="brand-wrap">
+        <div id="brandMark" class="brand-mark">EF</div>
+        <div class="brand-copy">
+          <strong id="brandName">EventFlow</strong>
+          <span>Booking CRM</span>
+        </div>
+      </div>
+
+      <nav id="nav" class="nav">
+        <button data-route="dashboard" class="active"><span>⌂</span> Dashboard</button>
+        <button data-route="enquiries"><span>✦</span> Enquiries <em id="navEnquiryCount"></em></button>
+        <button data-route="bookings"><span>▣</span> Bookings</button>
+        <button data-route="calendar"><span>□</span> Calendar</button>
+        <button data-route="customers"><span>♙</span> Customers</button>
+        <button data-route="invoices"><span>£</span> Invoices</button>
+        <button data-route="payments"><span>✓</span> Payments</button>
+        <div class="nav-divider">BUSINESS</div>
+        <button data-route="services"><span>◇</span> Services</button>
+        <button data-route="performers"><span>♧</span> Team / Suppliers</button>
+        <button data-route="emails"><span>✉</span> Emails & automation</button>
+        <button data-route="reports"><span>⌁</span> Reports</button>
+        <button data-route="settings"><span>⚙</span> Settings</button>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <a href="enquiry.html" target="_blank">↗ Public enquiry form</a>
+        <a href="availability.html" target="_blank">↗ Availability page</a>
+        <div id="modeBadge" class="mode-badge">Checking mode…</div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button id="mobileMenu" class="icon-btn mobile-only" aria-label="Open menu">☰</button>
+        <div>
+          <div class="eyebrow" id="pageEyebrow">OVERVIEW</div>
+          <h1 id="pageTitle">Dashboard</h1>
+        </div>
+        <div class="top-actions">
+          <button id="globalSearchBtn" class="soft-btn">⌕ Search</button>
+          <button id="quickAddBtn" class="primary-btn">＋ New booking</button>
+        </div>
+      </header>
+      <section id="view" class="view"></section>
+    </main>
+  </div>
+
+  <dialog id="modal" class="modal">
+    <form method="dialog" class="modal-frame" onsubmit="return false">
+      <div class="modal-head">
+        <div>
+          <div id="modalEyebrow" class="eyebrow">CREATE</div>
+          <h2 id="modalTitle">New record</h2>
+        </div>
+        <button id="modalClose" class="icon-btn" type="button">×</button>
+      </div>
+      <div id="modalBody" class="modal-body"></div>
+      <div id="modalFooter" class="modal-footer"></div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast"></div>
+  <script src="assets/app.js"></script>
+</body>
+</html>

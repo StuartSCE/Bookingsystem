@@ -1,0 +1,25 @@
+{
+  "name": "eventflow-crm",
+  "version": "1.0.0",
+  "description": "Ownable white-label event booking CRM for enquiries, customers, bookings, contracts, invoices and payments.",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.9.16",
+    "stripe": "^17.3.1"
+  }
+}
