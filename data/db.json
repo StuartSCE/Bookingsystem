@@ -13,7 +13,8 @@
     "defaultDepositPercent": 25,
     "paymentTermsDays": 14,
     "enquiryThankYou": "Thanks \u2014 your enquiry has been received. We\u2019ll be in touch shortly.",
-    "terms": "Bookings are confirmed once the contract is accepted and any required deposit is paid."
+    "terms": "Bookings are confirmed once the contract is accepted and any required deposit is paid.",
+    "addressFinderApiKey": "ak_test"
   },
   "enquiries": [
     {

@@ -212,3 +212,15 @@ Before using this for live customer data:
 ## Notes
 
 The app has been designed so the static front end is usable immediately while the same UI can connect to the supplied API when hosted together. That makes it easy to iterate on GitHub first and move to a real hosted system without throwing the prototype away.
+
+
+## Customer address autocomplete
+
+The **Customers → New customer → Main Address → Quick Search** field is wired to **Ideal Postcodes Address Finder**. Start typing a UK house number, street or postcode, choose a suggestion, and the CRM fills Street 1, Street 2, Town, County, Postcode and Country.
+
+- The project defaults to Ideal Postcodes' public test key `ak_test` for a small number of development lookups.
+- For real use, create an Ideal Postcodes account and paste your `ak_...` key into **Settings → Address lookup**.
+- Before going live, restrict the key's **Allowed URLs** to your GitHub Pages / staging / production domains and set sensible daily limits. Browser keys are publishable and are protected by those URL restrictions.
+- Address fields always remain editable manually, so a lookup outage or exhausted balance never blocks customer creation.
+
+The browser bundle is pinned to `@ideal-postcodes/address-finder-bundled@5` in `index.html`.
