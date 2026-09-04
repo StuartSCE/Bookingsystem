@@ -116,7 +116,7 @@ app.post('/api/auth/login', async (req, res) => {
 app.use('/api', authMiddleware);
 
 app.get('/api/health', (req, res) => {
-  res.json({ ok: true, app: 'EventFlow CRM', version: '1.3.0', authRequired: authRequired() });
+  res.json({ ok: true, app: 'EventFlow CRM', version: '1.8.0', authRequired: authRequired() });
 });
 
 app.get('/api/bootstrap', (req, res) => {
@@ -253,17 +253,24 @@ app.post('/api/invoices/:recordId/mark-paid', (req, res) => {
   const db = readDb();
   const invoice = (db.invoices || []).find(x => x.id === req.params.recordId);
   if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
-  invoice.status = 'Paid';
-  invoice.paidAt = now();
+  const alreadyPaid = (db.payments || []).filter(p => p.invoiceId === invoice.id).reduce((sum,p) => sum + Number(p.amount || 0), 0);
+  const remaining = Math.max(0, Number(invoice.amount || 0) - alreadyPaid);
+  const amount = Number(req.body.amount ?? remaining);
+  if (!Number.isFinite(amount) || amount <= 0) return res.status(400).json({ error: 'Payment amount must be greater than zero' });
+  if (amount > remaining + 0.005) return res.status(400).json({ error: `Payment exceeds the remaining invoice balance (${remaining.toFixed(2)})` });
   const payment = {
     id: id('pay'), createdAt: now(), invoiceId: invoice.id, invoiceNumber: invoice.number,
-    customerName: invoice.customerName, amount: Number(req.body.amount ?? invoice.amount),
+    customerName: invoice.customerName, amount,
     method: req.body.method || 'Bank transfer', reference: req.body.reference || '', date: req.body.date || today()
   };
   db.payments.unshift(payment);
-  activity(db, 'payment', `${invoice.number} marked paid`);
+  const paidTotal = alreadyPaid + amount;
+  invoice.paidAmount = paidTotal;
+  invoice.status = paidTotal + 0.005 >= Number(invoice.amount || 0) ? 'Paid' : 'Part Paid';
+  invoice.paidAt = invoice.status === 'Paid' ? now() : null;
+  activity(db, 'payment', `${amount.toFixed(2)} recorded against ${invoice.number}`);
   writeDb(db);
-  res.json({ invoice, payment });
+  res.json({ invoice, payment, paidTotal, remaining: Math.max(0, Number(invoice.amount || 0) - paidTotal) });
 });
 
 

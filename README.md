@@ -231,5 +231,10 @@ The browser bundle is pinned to `@ideal-postcodes/address-finder-bundled@5` in `
 The New Booking form now includes Date, Event Title, Entertainment, Venue Details with address autocomplete, Timings, Other Information, and Fees. Grand Total is calculated from Fee + Other Services Total, and selecting an Entertainment service can prefill its fee and deposit. Existing bookings retain management controls for status, contract status and linked customer.
 
 
-### v1.7 booking layout fix
+### v1.8 booking layout fix
 The New Booking modal now hard-forces each major section and all of its fields into a single vertical column. Versioned asset filenames and inline critical CSS prevent stale browser-cached two-column styles from reappearing.
+
+
+## v1.8 booking workflow
+
+Saving a booking now opens a dedicated Booking Overview. Bookings use a permanent customer link (separate from Event Contact), and the overview supports contract issue/email, deposit invoice creation, booking confirmation email, payment recording including partial payments, additional services, internal notes, editing and the client portal. In static mode email actions prepare the message in the user's email application; in Node/server mode they send through configured SMTP.

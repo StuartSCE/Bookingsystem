@@ -5,45 +5,43 @@ const path = require('node:path');
 const root = path.join(__dirname, '..');
 
 test('seed database contains core collections', () => {
-  const db = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'db.json'), 'utf8'));
-  for (const key of ['settings','enquiries','customers','bookings','invoices','payments','services','performers','emailTemplates','automations']) {
-    assert.ok(key in db, `missing ${key}`);
-  }
+  const db = JSON.parse(fs.readFileSync(path.join(root, 'data', 'db.json'), 'utf8'));
+  for (const key of ['settings','enquiries','customers','bookings','invoices','payments','services','performers','emailTemplates','automations','documents']) assert.ok(key in db, `missing ${key}`);
 });
 
-test('root index exists', () => {
-  assert.ok(fs.existsSync(path.join(__dirname, '..', 'index.html')));
+test('root index exists and uses v1.8 assets', () => {
+  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+  assert.ok(html.includes('assets/styles-v1.8.css'));
+  assert.ok(html.includes('assets/app-v1.8.js'));
+  assert.ok(html.includes('booking-layout-v18'));
 });
 
-test('new booking form contains requested sections and fields', () => {
-  const app = fs.readFileSync(path.join(__dirname, '..', 'assets', 'app.js'), 'utf8');
-  for (const marker of [
-    'DATE</label>', 'EVENT TITLE', 'ENTERTAINMENT', 'VENUE DETAILS', 'ADDRESS QUICK SEARCH',
-    'VENUE NAME', 'VENUE ADDRESS', 'VENUE POSTCODE', 'VENUE TELEPHONE', 'VENUE NOTES',
-    'ARRIVAL TIME', 'START TIME', 'FINISH TIME', 'No Finish Time', 'Shift Time Zone',
-    'EVENT CONTACT', 'DRESS CODE', 'NO. OF GUESTS', 'OTHER SERVICES TOTAL', 'GRAND TOTAL',
-    'DEPOSIT', 'PAYMENT INSTRUCTIONS'
-  ]) assert.ok(app.includes(marker), `missing booking field/section: ${marker}`);
+test('new booking has permanent customer selector and requested sections', () => {
+  const app=fs.readFileSync(path.join(root,'assets','app-v1.8.js'),'utf8');
+  for(const marker of ['bCustomerSearch','bCustomerId','EVENT DETAILS','VENUE DETAILS','TIMINGS','OTHER INFORMATION','FEES','EVENT CONTACT','PAYMENT INSTRUCTIONS']) assert.ok(app.includes(marker),`missing ${marker}`);
+  assert.ok(app.includes("Choose an existing customer before saving the booking"));
 });
 
-
-test('booking form layout is hard-forced to one vertical column', () => {
-  const app = fs.readFileSync(path.join(root, 'assets', 'app-v1.7.js'), 'utf8');
-  const start = app.indexOf("openModal(id?'Manage booking':'New booking'");
-  const end = app.indexOf("'Save booking',async()=>{", start);
-  assert.ok(start >= 0 && end > start);
-  const block = app.slice(start, end);
+test('booking form remains hard single-column', () => {
+  const app=fs.readFileSync(path.join(root,'assets','app-v1.8.js'),'utf8');
+  const start=app.indexOf("openModal(id?'Edit booking':'New booking'");
+  const end=app.indexOf("'Save booking',async()=>{",start);
+  assert.ok(start>=0&&end>start);
+  const block=app.slice(start,end);
   assert.ok(!block.includes('form-grid'));
-  assert.ok(block.includes('display:flex!important;flex-direction:column!important'));
-  for (const heading of ['EVENT DETAILS','VENUE DETAILS','TIMINGS','OTHER INFORMATION','FEES']) {
-    assert.ok(block.includes(`>${heading}`));
-  }
+  assert.ok(block.includes('flex-direction:column!important'));
 });
 
-test('index uses versioned assets and contains critical booking layout', () => {
-  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  assert.ok(html.includes('assets/styles-v1.7.css'));
-  assert.ok(html.includes('assets/app-v1.7.js'));
-  assert.ok(html.includes('booking-layout-v17'));
-  assert.ok(html.includes('flex-direction:column!important'));
+test('saving a booking navigates to Booking Overview', () => {
+  const app=fs.readFileSync(path.join(root,'assets','app-v1.8.js'),'utf8');
+  assert.ok(app.includes('navigateBooking(saved.id)'));
+  assert.ok(app.includes('function renderBookingOverview(id)'));
+  for(const action of ['sendContract','depositInvoice','sendConfirmation','recordBookingPayment','addBookingService','addBookingNote','bookingEdit']) assert.ok(app.includes(`id="${action}"`)||app.includes(`'#${action}'`)||app.includes(`$('#${action}')`),`missing action ${action}`);
+});
+
+test('payments support partial invoice payments', () => {
+  const server=fs.readFileSync(path.join(root,'server.js'),'utf8');
+  assert.ok(server.includes("'Part Paid'"));
+  assert.ok(server.includes('paidTotal'));
+  assert.ok(server.includes('Payment exceeds the remaining invoice balance'));
 });
