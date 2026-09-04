@@ -3,19 +3,29 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const root = path.join(__dirname, '..');
-const app = () => fs.readFileSync(path.join(root,'assets','app-v2.1.js'),'utf8');
+const app = () => fs.readFileSync(path.join(root,'assets','app-v2.2.js'),'utf8');
 
 test('seed database contains core CRM collections', () => {
   const db = JSON.parse(fs.readFileSync(path.join(root, 'data', 'db.json'), 'utf8'));
   for (const key of ['settings','enquiries','customers','bookings','invoices','payments','services','performers','emailTemplates','automations','documents']) assert.ok(key in db, `missing ${key}`);
 });
 
-test('v2.1 index uses cache-busted assets and Events wording', () => {
+test('v2.2 index uses cache-busted assets and Events wording', () => {
   const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
   assert.ok(html.includes('assets/styles-v2.1.css'));
-  assert.ok(html.includes('assets/app-v2.1.js'));
+  assert.ok(html.includes('assets/app-v2.2.js'));
   assert.match(html, /> Events<\/button>/);
   assert.ok(html.includes('＋ New event'));
+});
+
+
+test('navigation render helpers required by dashboard and finance views are present', () => {
+  const src=app();
+  assert.ok(src.includes('const stat ='), 'stat card helper missing');
+  assert.ok(src.includes('const quick ='), 'quick action helper missing');
+  for(const route of ['dashboard','enquiries','bookings','calendar','customers','invoices','payments','services','performers','emails','reports','settings']) {
+    assert.ok(src.includes(`${route}:`), `route renderer missing: ${route}`);
+  }
 });
 
 test('new event permanently links a saved customer and keeps the requested event sections', () => {

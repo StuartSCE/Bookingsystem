@@ -1,4 +1,6 @@
-# EventFlow CRM v2.1
+# EventFlow CRM v2.2
+
+2.1
 
 An original, white-label event-business CRM for managing enquiries, customers, events, contracts, invoices, payments, services, suppliers/team members, email templates, automation rules and availability.
 
@@ -263,3 +265,10 @@ Saving a booking now opens a dedicated Booking Overview. Bookings use a permanen
 The static `index.html` / GitHub demo stores bookings in that browser only. It is therefore **not suitable for emailing live contract links to customers**. v1.9 prevents a live contract email from being prepared while the booking is only local, and provides a self-contained local contract preview instead.
 
 For real customer contract links and automatic acceptance updates, run/deploy the Node application on a public HTTPS URL. Once the CRM is opened from that deployed server, `client.html?booking=...` retrieves the shared booking via `/api/public/booking/:id`, and accepting the contract updates the server record. A server running only on `localhost`, a private LAN IP, or a `file://` URL is intentionally treated as non-public.
+
+
+## v2.2 fixes
+
+- **Navigation reliability:** restored the dashboard/stat and quick-action render helpers accidentally omitted during the v2.1 workflow rebuild.
+- **Sidebar routing:** verified Dashboard, Enquiries, Events, Calendar, Customers, Invoices, Payments, Services, Team/Suppliers, Emails, Reports and Settings render their own main view when selected.
+- `index.html` now loads `assets/app-v2.2.js` to avoid a cached v2.1 script.
