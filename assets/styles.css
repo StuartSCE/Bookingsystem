@@ -117,29 +117,46 @@ tbody tr:hover { background: #fbfbfd; }
 .helper { color: var(--muted); font-size: 10px; }
 .form-section-title { grid-column: 1/-1; margin: 8px 0 -2px; font-size: 11px; font-weight: 800; color: var(--ink); }
 
-/* Booking form spacing: keep the longer booking workflow easy to scan. */
-.booking-form { row-gap: 17px; }
-.booking-form .field { gap: 8px; }
-.booking-form .form-section {
-  margin-top: 24px;
-  padding-top: 24px;
-  padding-bottom: 3px;
+/* Booking form: each major group is a full-width block so headings never sit beside unrelated fields. */
+.booking-form { display: block; }
+.booking-section {
+  display: block;
+  width: 100%;
+  margin-top: 34px;
+  padding-top: 30px;
   border-top: 1px solid var(--line);
 }
-.booking-form .form-section-title {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: .055em;
+.booking-section-first {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+.booking-section-heading {
+  display: block;
+  width: 100%;
+  margin: 0 0 20px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 850;
+  letter-spacing: .06em;
   line-height: 1.35;
 }
-.booking-form .form-section-title .helper {
+.booking-section-heading span {
   margin-left: 6px;
+  color: var(--muted);
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 650;
   letter-spacing: 0;
 }
-.booking-form .form-section + .field { margin-top: 2px; }
+.booking-section-fields {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+}
+.booking-section-fields .field { gap: 8px; }
+.booking-section-fields .field.full { grid-column: 1 / -1; }
+.booking-checkbox-field { align-content: end; min-height: 54px; }
+.booking-checkbox-field .toggle { min-height: 40px; display: flex; align-items: center; gap: 8px; }
 
 .calendar-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 .calendar-title { font-size: 18px; font-weight: 800; letter-spacing: -.03em; }

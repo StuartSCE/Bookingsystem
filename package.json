@@ -1,6 +1,6 @@
 {
   "name": "eventflow-crm",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Ownable white-label event booking CRM for enquiries, customers, bookings, contracts, invoices and payments.",
   "main": "server.js",
   "type": "commonjs",

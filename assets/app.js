@@ -417,44 +417,69 @@
     const eventContact=b.eventContact||b.customerName||'';
     const venueName=b.venueName||b.venue||'';
 
-    openModal(id?'Manage booking':'New booking','EVENT',`<div class="form-grid booking-form">
-      <div class="field"><label>DATE</label><input id="bDate" type="date" value="${esc(b.eventDate||'')}"></div>
-      <div class="field"><label>EVENT TITLE</label><input id="bTitle" value="${esc(b.title||'')}"></div>
-      <div class="field full"><label>ENTERTAINMENT</label><select id="bEntertainment"><option value="">Choose…</option>${(state.services||[]).map(s=>`<option value="${s.id}" ${entertainmentId===s.id||(!entertainmentId&&entertainmentName===s.name)?'selected':''}>${esc(s.name)}</option>`).join('')}</select></div>
+    openModal(id?'Manage booking':'New booking','EVENT',`<div class="booking-form">
+      <section class="booking-section booking-section-first">
+        <div class="booking-section-heading">EVENT DETAILS</div>
+        <div class="booking-section-fields">
+          <div class="field"><label>DATE</label><input id="bDate" type="date" value="${esc(b.eventDate||'')}"></div>
+          <div class="field"><label>EVENT TITLE</label><input id="bTitle" value="${esc(b.title||'')}"></div>
+          <div class="field full"><label>ENTERTAINMENT</label><select id="bEntertainment"><option value="">Choose…</option>${(state.services||[]).map(s=>`<option value="${s.id}" ${entertainmentId===s.id||(!entertainmentId&&entertainmentName===s.name)?'selected':''}>${esc(s.name)}</option>`).join('')}</select></div>
+        </div>
+      </section>
 
-      <div class="form-section full"><div class="form-section-title"><strong>VENUE DETAILS</strong></div></div>
-      <div class="field full"><label>ADDRESS QUICK SEARCH</label><input id="bVenueQuickSearch" value="${esc(b.venueQuickSearch||'')}" placeholder="Start typing a venue, address or postcode…" autocomplete="off"><div class="helper" id="bookingAddressLookupStatus">Start typing and choose an address from the suggestions.</div></div>
-      <div class="field full"><label>VENUE NAME</label><input id="bVenueName" value="${esc(venueName)}"></div>
-      <div class="field full"><label>VENUE ADDRESS</label><textarea id="bVenueAddress">${esc(b.venueAddress||'')}</textarea></div>
-      <div class="field"><label>VENUE POSTCODE</label><input id="bVenuePostcode" value="${esc(b.venuePostcode||'')}"></div>
-      <div class="field"><label>VENUE TELEPHONE</label><input id="bVenueTelephone" type="tel" value="${esc(b.venueTelephone||'')}"></div>
-      <div class="field full"><label>VENUE NOTES</label><textarea id="bVenueNotes">${esc(b.venueNotes||b.notes||'')}</textarea></div>
+      <section class="booking-section">
+        <div class="booking-section-heading">VENUE DETAILS</div>
+        <div class="booking-section-fields">
+          <div class="field full"><label>ADDRESS QUICK SEARCH</label><input id="bVenueQuickSearch" value="${esc(b.venueQuickSearch||'')}" placeholder="Start typing a venue, address or postcode…" autocomplete="off"><div class="helper" id="bookingAddressLookupStatus">Start typing and choose an address from the suggestions.</div></div>
+          <div class="field full"><label>VENUE NAME</label><input id="bVenueName" value="${esc(venueName)}"></div>
+          <div class="field full"><label>VENUE ADDRESS</label><textarea id="bVenueAddress">${esc(b.venueAddress||'')}</textarea></div>
+          <div class="field"><label>VENUE POSTCODE</label><input id="bVenuePostcode" value="${esc(b.venuePostcode||'')}"></div>
+          <div class="field"><label>VENUE TELEPHONE</label><input id="bVenueTelephone" type="tel" value="${esc(b.venueTelephone||'')}"></div>
+          <div class="field full"><label>VENUE NOTES</label><textarea id="bVenueNotes">${esc(b.venueNotes||b.notes||'')}</textarea></div>
+        </div>
+      </section>
 
-      <div class="form-section full"><div class="form-section-title"><strong>TIMINGS</strong> <span class="helper">(enter in HH:mm format)</span></div></div>
-      <div class="field"><label>ARRIVAL TIME</label><input id="bArrivalTime" type="time" value="${esc(b.arrivalTime||'')}"></div>
-      <div class="field"><label>START TIME</label><input id="bStartTime" type="time" value="${esc(b.startTime||'')}"></div>
-      <div class="field"><label>FINISH TIME</label><input id="bFinishTime" type="time" value="${esc(finishTime)}" ${noFinishTime?'disabled':''}></div>
-      <div class="field"><label>&nbsp;</label><label class="toggle"><input id="bNoFinishTime" type="checkbox" ${noFinishTime?'checked':''}> No Finish Time</label></div>
-      <div class="field full"><label class="toggle"><input id="bShiftTimeZone" type="checkbox" ${b.shiftTimeZone?'checked':''}> Shift Time Zone</label></div>
+      <section class="booking-section">
+        <div class="booking-section-heading">TIMINGS <span>(enter in HH:mm format)</span></div>
+        <div class="booking-section-fields">
+          <div class="field"><label>ARRIVAL TIME</label><input id="bArrivalTime" type="time" value="${esc(b.arrivalTime||'')}"></div>
+          <div class="field"><label>START TIME</label><input id="bStartTime" type="time" value="${esc(b.startTime||'')}"></div>
+          <div class="field"><label>FINISH TIME</label><input id="bFinishTime" type="time" value="${esc(finishTime)}" ${noFinishTime?'disabled':''}></div>
+          <div class="field booking-checkbox-field"><label class="toggle"><input id="bNoFinishTime" type="checkbox" ${noFinishTime?'checked':''}> No Finish Time</label></div>
+          <div class="field full booking-checkbox-field"><label class="toggle"><input id="bShiftTimeZone" type="checkbox" ${b.shiftTimeZone?'checked':''}> Shift Time Zone</label></div>
+        </div>
+      </section>
 
-      <div class="form-section full"><div class="form-section-title"><strong>OTHER INFORMATION</strong></div></div>
-      <div class="field"><label>EVENT CONTACT</label><input id="bEventContact" list="bookingCustomerNames" value="${esc(eventContact)}"><datalist id="bookingCustomerNames">${(state.customers||[]).map(c=>`<option value="${esc(customerDisplayName(c))}"></option>`).join('')}</datalist></div>
-      <div class="field"><label>TELEPHONE</label><input id="bEventTelephone" type="tel" value="${esc(b.eventTelephone||'')}"></div>
-      <div class="field"><label>DRESS CODE</label><input id="bDressCode" value="${esc(b.dressCode||'')}"></div>
-      <div class="field"><label>NO. OF GUESTS</label><input id="bGuestCount" type="number" min="0" step="1" value="${esc(b.guestCount??'')}"></div>
+      <section class="booking-section">
+        <div class="booking-section-heading">OTHER INFORMATION</div>
+        <div class="booking-section-fields">
+          <div class="field"><label>EVENT CONTACT</label><input id="bEventContact" list="bookingCustomerNames" value="${esc(eventContact)}"><datalist id="bookingCustomerNames">${(state.customers||[]).map(c=>`<option value="${esc(customerDisplayName(c))}"></option>`).join('')}</datalist></div>
+          <div class="field"><label>TELEPHONE</label><input id="bEventTelephone" type="tel" value="${esc(b.eventTelephone||'')}"></div>
+          <div class="field"><label>DRESS CODE</label><input id="bDressCode" value="${esc(b.dressCode||'')}"></div>
+          <div class="field"><label>NO. OF GUESTS</label><input id="bGuestCount" type="number" min="0" step="1" value="${esc(b.guestCount??'')}"></div>
+        </div>
+      </section>
 
-      <div class="form-section full"><div class="form-section-title"><strong>FEES</strong></div></div>
-      <div class="field"><label>FEE</label><input id="bFee" type="number" min="0" step="0.01" value="${esc(fee||'')}"></div>
-      <div class="field"><label>OTHER SERVICES TOTAL</label><input id="bOtherServicesTotal" type="number" min="0" step="0.01" value="${esc(otherServicesTotal)}" readonly><div class="helper">Calculated from additional services when added.</div></div>
-      <div class="field"><label>GRAND TOTAL</label><input id="bGrandTotal" type="number" step="0.01" value="${esc(grandTotal)}" readonly></div>
-      <div class="field"><label>DEPOSIT</label><input id="bDeposit" type="number" min="0" step="0.01" value="${esc(b.deposit||'')}"></div>
-      <div class="field full"><label>PAYMENT INSTRUCTIONS</label><textarea id="bPaymentInstructions" placeholder="e.g. Bank transfer details, payment schedule or client instructions…">${esc(b.paymentInstructions||'')}</textarea></div>
+      <section class="booking-section">
+        <div class="booking-section-heading">FEES</div>
+        <div class="booking-section-fields">
+          <div class="field"><label>FEE</label><input id="bFee" type="number" min="0" step="0.01" value="${esc(fee||'')}"></div>
+          <div class="field"><label>OTHER SERVICES TOTAL</label><input id="bOtherServicesTotal" type="number" min="0" step="0.01" value="${esc(otherServicesTotal)}" readonly><div class="helper">Calculated from additional services when added.</div></div>
+          <div class="field"><label>GRAND TOTAL</label><input id="bGrandTotal" type="number" step="0.01" value="${esc(grandTotal)}" readonly></div>
+          <div class="field"><label>DEPOSIT</label><input id="bDeposit" type="number" min="0" step="0.01" value="${esc(b.deposit||'')}"></div>
+          <div class="field full"><label>PAYMENT INSTRUCTIONS</label><textarea id="bPaymentInstructions" placeholder="e.g. Bank transfer details, payment schedule or client instructions…">${esc(b.paymentInstructions||'')}</textarea></div>
+        </div>
+      </section>
       ${id?`
-        <div class="form-section full"><div class="form-section-title"><strong>BOOKING MANAGEMENT</strong></div></div>
-        <div class="field"><label>STATUS</label><select id="bStatus">${['Enquiry','Date Held','Contract Issued','Confirmed','Completed','Cancelled'].map(x=>`<option ${b.status===x?'selected':''}>${x}</option>`).join('')}</select></div>
-        <div class="field"><label>CONTRACT STATUS</label><select id="bContractStatus">${['Draft','Sent','Accepted','Declined'].map(x=>`<option ${b.contractStatus===x?'selected':''}>${x}</option>`).join('')}</select></div>
-        <div class="field full"><label>LINKED CUSTOMER</label><select id="bCustomer"><option value="">None</option>${(state.customers||[]).map(c=>`<option value="${c.id}" ${b.customerId===c.id?'selected':''}>${esc(customerDisplayName(c))}</option>`).join('')}</select></div>
-        <div class="field full"><div class="notice">Client portal link: <b>client.html?booking=${esc(b.id)}</b>.</div></div>`:''}
+        <section class="booking-section">
+          <div class="booking-section-heading">BOOKING MANAGEMENT</div>
+          <div class="booking-section-fields">
+            <div class="field"><label>STATUS</label><select id="bStatus">${['Enquiry','Date Held','Contract Issued','Confirmed','Completed','Cancelled'].map(x=>`<option ${b.status===x?'selected':''}>${x}</option>`).join('')}</select></div>
+            <div class="field"><label>CONTRACT STATUS</label><select id="bContractStatus">${['Draft','Sent','Accepted','Declined'].map(x=>`<option ${b.contractStatus===x?'selected':''}>${x}</option>`).join('')}</select></div>
+            <div class="field full"><label>LINKED CUSTOMER</label><select id="bCustomer"><option value="">None</option>${(state.customers||[]).map(c=>`<option value="${c.id}" ${b.customerId===c.id?'selected':''}>${esc(customerDisplayName(c))}</option>`).join('')}</select></div>
+            <div class="field full"><div class="notice">Client portal link: <b>client.html?booking=${esc(b.id)}</b>.</div></div>
+          </div>
+        </section>`:''}
     </div>`,'Save booking',async()=>{
       const svc=(state.services||[]).find(s=>s.id===val('#bEntertainment'));
       const eventContact=val('#bEventContact');
