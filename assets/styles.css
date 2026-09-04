@@ -116,6 +116,31 @@ tbody tr:hover { background: #fbfbfd; }
 .field textarea { min-height: 88px; resize: vertical; }
 .helper { color: var(--muted); font-size: 10px; }
 .form-section-title { grid-column: 1/-1; margin: 8px 0 -2px; font-size: 11px; font-weight: 800; color: var(--ink); }
+
+/* Booking form spacing: keep the longer booking workflow easy to scan. */
+.booking-form { row-gap: 17px; }
+.booking-form .field { gap: 8px; }
+.booking-form .form-section {
+  margin-top: 24px;
+  padding-top: 24px;
+  padding-bottom: 3px;
+  border-top: 1px solid var(--line);
+}
+.booking-form .form-section-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: .055em;
+  line-height: 1.35;
+}
+.booking-form .form-section-title .helper {
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+.booking-form .form-section + .field { margin-top: 2px; }
+
 .calendar-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 .calendar-title { font-size: 18px; font-weight: 800; letter-spacing: -.03em; }
 .calendar-grid { display: grid; grid-template-columns: repeat(7,1fr); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: #fff; }

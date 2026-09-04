@@ -417,7 +417,7 @@
     const eventContact=b.eventContact||b.customerName||'';
     const venueName=b.venueName||b.venue||'';
 
-    openModal(id?'Manage booking':'New booking','EVENT',`<div class="form-grid">
+    openModal(id?'Manage booking':'New booking','EVENT',`<div class="form-grid booking-form">
       <div class="field"><label>DATE</label><input id="bDate" type="date" value="${esc(b.eventDate||'')}"></div>
       <div class="field"><label>EVENT TITLE</label><input id="bTitle" value="${esc(b.title||'')}"></div>
       <div class="field full"><label>ENTERTAINMENT</label><select id="bEntertainment"><option value="">Choose…</option>${(state.services||[]).map(s=>`<option value="${s.id}" ${entertainmentId===s.id||(!entertainmentId&&entertainmentName===s.name)?'selected':''}>${esc(s.name)}</option>`).join('')}</select></div>
