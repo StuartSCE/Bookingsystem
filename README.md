@@ -238,3 +238,10 @@ The New Booking modal now hard-forces each major section and all of its fields i
 ## v1.8 booking workflow
 
 Saving a booking now opens a dedicated Booking Overview. Bookings use a permanent customer link (separate from Event Contact), and the overview supports contract issue/email, deposit invoice creation, booking confirmation email, payment recording including partial payments, additional services, internal notes, editing and the client portal. In static mode email actions prepare the message in the user's email application; in Node/server mode they send through configured SMTP.
+
+
+## v1.9 contract portal safety
+
+The static `index.html` / GitHub demo stores bookings in that browser only. It is therefore **not suitable for emailing live contract links to customers**. v1.9 prevents a live contract email from being prepared while the booking is only local, and provides a self-contained local contract preview instead.
+
+For real customer contract links and automatic acceptance updates, run/deploy the Node application on a public HTTPS URL. Once the CRM is opened from that deployed server, `client.html?booking=...` retrieves the shared booking via `/api/public/booking/:id`, and accepting the contract updates the server record. A server running only on `localhost`, a private LAN IP, or a `file://` URL is intentionally treated as non-public.

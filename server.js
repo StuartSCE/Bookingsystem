@@ -116,7 +116,7 @@ app.post('/api/auth/login', async (req, res) => {
 app.use('/api', authMiddleware);
 
 app.get('/api/health', (req, res) => {
-  res.json({ ok: true, app: 'EventFlow CRM', version: '1.8.0', authRequired: authRequired() });
+  res.json({ ok: true, app: 'EventFlow CRM', version: '1.9.0', authRequired: authRequired() });
 });
 
 app.get('/api/bootstrap', (req, res) => {
