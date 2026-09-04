@@ -82,6 +82,27 @@ function activity(db, type, text) {
   db.activities = db.activities.slice(0, 250);
 }
 
+
+async function sendEmailIfConfigured({ to, subject, text, html }) {
+  if (!process.env.SMTP_HOST || !to) return { sent: false, reason: 'SMTP not configured' };
+  try {
+    const transport = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT || 587),
+      secure: String(process.env.SMTP_SECURE || 'false') === 'true',
+      auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : undefined
+    });
+    const info = await transport.sendMail({
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to, subject, text, html
+    });
+    return { sent: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('Email send failed:', error.message);
+    return { sent: false, reason: error.message };
+  }
+}
+
 function authRequired() {
   return String(process.env.AUTH_REQUIRED || 'false').toLowerCase() === 'true';
 }
@@ -116,7 +137,7 @@ app.post('/api/auth/login', async (req, res) => {
 app.use('/api', authMiddleware);
 
 app.get('/api/health', (req, res) => {
-  res.json({ ok: true, app: 'EventFlow CRM', version: '1.9.0', authRequired: authRequired() });
+  res.json({ ok: true, app: 'EventFlow CRM', version: '2.1.0', authRequired: authRequired() });
 });
 
 app.get('/api/bootstrap', (req, res) => {
@@ -227,6 +248,47 @@ app.post('/api/bookings/:recordId/confirm', (req, res) => {
   res.json(booking);
 });
 
+
+app.post('/api/bookings/:recordId/generate-invoices', (req, res) => {
+  const db = readDb();
+  const booking = (db.bookings || []).find(x => x.id === req.params.recordId);
+  if (!booking) return res.status(404).json({ error: 'Event not found' });
+  const total = Number(booking.grandTotal ?? booking.total ?? 0);
+  if (!Number.isFinite(total) || total <= 0) return res.status(400).json({ error: 'Event has no billable total' });
+  const deposit = Math.max(0, Math.min(total, Number(booking.deposit || 0)));
+  const mainAmount = Math.max(0, total - deposit);
+  const terms = Number(db.settings.paymentTermsDays || 14);
+  const issue = today();
+  const depositDue = new Date(`${issue}T12:00:00`);
+  depositDue.setDate(depositDue.getDate() + terms);
+  let mainDue = booking.eventDate ? new Date(`${booking.eventDate}T12:00:00`) : new Date(`${issue}T12:00:00`);
+  mainDue.setDate(mainDue.getDate() - terms);
+  if (mainDue < new Date(`${issue}T00:00:00`)) {
+    mainDue = new Date(`${issue}T12:00:00`);
+    mainDue.setDate(mainDue.getDate() + terms);
+  }
+  db.invoices ||= [];
+  const created = [];
+  const exists = type => db.invoices.some(i => i.bookingId === booking.id && (type === 'Main' ? ['Main','Balance'].includes(i.type) : i.type === type) && !['Cancelled','Credited'].includes(i.status));
+  const make = (type, amount, dueDate, description) => {
+    if (amount <= 0 || exists(type)) return null;
+    const number = `${db.settings.invoicePrefix || 'INV-'}${db.settings.nextInvoiceNumber || 1}`;
+    db.settings.nextInvoiceNumber = Number(db.settings.nextInvoiceNumber || 1) + 1;
+    const invoice = {
+      id: id('inv'), createdAt: now(), number, bookingId: booking.id, customerId: booking.customerId,
+      customerName: booking.customerName, type, issueDate: issue, dueDate, amount, status: 'Draft', paidAt: null,
+      description
+    };
+    db.invoices.unshift(invoice); created.push(invoice); return invoice;
+  };
+  if (deposit > 0) make('Deposit', deposit, depositDue.toISOString().slice(0,10), `Deposit - ${booking.title}`);
+  if (mainAmount > 0) make('Main', mainAmount, mainDue.toISOString().slice(0,10), deposit > 0 ? `Main invoice - ${booking.title}` : `Full invoice - ${booking.title}`);
+  if (created.length) activity(db, 'invoice', `${created.length} invoice${created.length === 1 ? '' : 's'} generated for ${booking.title}`);
+  writeDb(db);
+  const invoices = db.invoices.filter(i => i.bookingId === booking.id && i.type !== 'Credit Note');
+  res.status(created.length ? 201 : 200).json({ created, invoices });
+});
+
 app.post('/api/bookings/:recordId/invoice', (req, res) => {
   const db = readDb();
   const booking = (db.bookings || []).find(x => x.id === req.params.recordId);
@@ -247,6 +309,32 @@ app.post('/api/bookings/:recordId/invoice', (req, res) => {
   activity(db, 'invoice', `Invoice ${number} created`);
   writeDb(db);
   res.status(201).json(invoice);
+});
+
+
+app.post('/api/invoices/:recordId/credit-note', (req, res) => {
+  const db = readDb();
+  const invoice = (db.invoices || []).find(x => x.id === req.params.recordId);
+  if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
+  if (['Paid','Credited','Bad Debt','Cancelled'].includes(invoice.status)) return res.status(400).json({ error: `Cannot credit an invoice with status ${invoice.status}` });
+  const paid = (db.payments || []).filter(p => p.invoiceId === invoice.id).reduce((sum,p) => sum + Number(p.amount || 0), 0);
+  const amount = Math.max(0, Number(invoice.amount || 0) - paid);
+  if (amount <= 0) return res.status(400).json({ error: 'There is no outstanding amount to credit' });
+  const n = Number(db.settings.nextInvoiceNumber || 1);
+  db.settings.nextInvoiceNumber = n + 1;
+  const credit = {
+    id: id('inv'), createdAt: now(), number: `CN-${n}`, bookingId: invoice.bookingId, customerId: invoice.customerId,
+    customerName: invoice.customerName, type: 'Credit Note', originalInvoiceId: invoice.id, issueDate: today(), dueDate: today(),
+    amount: -amount, status: 'Issued', description: `Credit note for ${invoice.number}${req.body.reason ? ` - ${req.body.reason}` : ''}`
+  };
+  db.invoices.unshift(credit);
+  invoice.status = 'Credited';
+  invoice.creditedAt = now();
+  invoice.creditNoteId = credit.id;
+  invoice.creditReason = req.body.reason || '';
+  activity(db, 'invoice', `Credit note ${credit.number} created for ${invoice.number}`);
+  writeDb(db);
+  res.status(201).json({ invoice, creditNote: credit });
 });
 
 app.post('/api/invoices/:recordId/mark-paid', (req, res) => {
@@ -285,7 +373,7 @@ app.get('/api/public/booking/:recordId', (req, res) => {
   if (!booking) return res.status(404).json({ error: 'Booking not found' });
   const customer = (db.customers || []).find(x => x.id === booking.customerId);
   const invoices = (db.invoices || []).filter(x => x.bookingId === booking.id);
-  res.json({ settings: db.settings || {}, booking, customer: customer ? { name: customer.name, email: customer.email } : null, invoices });
+  res.json({ settings: db.settings || {}, booking, customer: customer ? { id: customer.id, name: customer.name, company: customer.company, title: customer.title, firstName: customer.firstName, surname: customer.surname, email: customer.email, telephone: customer.telephone, mobile: customer.mobile, street1: customer.street1, street2: customer.street2, town: customer.town, county: customer.county, postcode: customer.postcode, country: customer.country } : null, invoices });
 });
 
 
@@ -314,18 +402,35 @@ app.post('/api/public/invoices/:recordId/checkout', async (req, res) => {
   res.json({ url: session.url });
 });
 
-app.post('/api/public/booking/:recordId/confirm', (req, res) => {
+app.post('/api/public/booking/:recordId/confirm', async (req, res) => {
   const db = readDb();
   const booking = (db.bookings || []).find(x => x.id === req.params.recordId);
   if (!booking) return res.status(404).json({ error: 'Booking not found' });
+  const customer = (db.customers || []).find(x => x.id === booking.customerId);
+  const acceptedAt = now();
   booking.status = 'Confirmed';
   booking.contractStatus = 'Accepted';
-  booking.contractAcceptedAt = now();
+  booking.contractAcceptedAt = acceptedAt;
   booking.contractAcceptedBy = req.body.name || booking.customerName;
   booking.contractAcceptedIp = req.ip;
-  activity(db, 'contract', `Contract accepted for ${booking.title}`);
+  const contract = (db.documents || []).filter(d => d.bookingId === booking.id && d.type === 'Contract').sort((a,b)=>String(b.updatedAt||b.createdAt||'').localeCompare(String(a.updatedAt||a.createdAt||'')))[0];
+  if (contract) {
+    contract.status = 'Accepted';
+    contract.acceptedAt = acceptedAt;
+    contract.acceptedBy = booking.contractAcceptedBy;
+    contract.acceptedIp = req.ip;
+    contract.updatedAt = acceptedAt;
+  }
+  activity(db, 'contract', `Contract signed for ${booking.title} by ${booking.contractAcceptedBy}`);
+  const notifyTo = db.settings?.businessEmail || process.env.ADMIN_EMAIL || '';
+  const notification = await sendEmailIfConfigured({
+    to: notifyTo,
+    subject: `Contract signed – ${booking.title}`,
+    text: `The booking contract has been signed online.\n\nEvent: ${booking.title}\nDate: ${booking.eventDate || ''}\nCustomer: ${customer?.firstName || ''} ${customer?.surname || booking.customerName || ''}\nSigned by: ${booking.contractAcceptedBy}\nSigned at: ${acceptedAt}\n\nOpen EventFlow CRM to view the event and invoice status.`
+  });
+  if (notification.sent) booking.contractSignedNotificationSentAt = now();
   writeDb(db);
-  res.json({ ok: true, booking });
+  res.json({ ok: true, booking, notificationSent: notification.sent });
 });
 
 app.get('/api/public/availability', (req, res) => {
@@ -370,20 +475,9 @@ app.post('/api/branding/logo', upload.single('logo'), (req, res) => {
 
 app.post('/api/send-email', async (req, res) => {
   if (!process.env.SMTP_HOST) return res.status(501).json({ error: 'SMTP is not configured. Add SMTP_* values to .env.' });
-  const transport = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT || 587),
-    secure: String(process.env.SMTP_SECURE || 'false') === 'true',
-    auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : undefined
-  });
-  const info = await transport.sendMail({
-    from: process.env.SMTP_FROM || process.env.SMTP_USER,
-    to: req.body.to,
-    subject: req.body.subject,
-    text: req.body.text,
-    html: req.body.html
-  });
-  res.json({ ok: true, messageId: info.messageId });
+  const out = await sendEmailIfConfigured({ to: req.body.to, subject: req.body.subject, text: req.body.text, html: req.body.html });
+  if (!out.sent) return res.status(502).json({ error: out.reason || 'Email could not be sent' });
+  res.json({ ok: true, messageId: out.messageId });
 });
 
 app.post('/api/stripe/create-checkout-session', async (req, res) => {

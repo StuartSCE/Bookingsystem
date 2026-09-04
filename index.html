@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#6d5dfc" />
   <title>EventFlow CRM</title>
 
-  <style id="booking-layout-v19">
+  <style id="booking-layout-v21">
     .booking-form{display:block!important;width:100%!important}
     .booking-form .booking-section{display:block!important;width:100%!important;margin:0 0 42px!important;padding:0 0 34px!important;border-top:0!important;border-bottom:1px solid var(--line)!important}
     .booking-form .booking-section:last-child{margin-bottom:0!important;border-bottom:0!important}
@@ -16,7 +16,7 @@
     .booking-form .booking-section-fields>.field>label:not(.toggle){display:block!important;margin:0 0 7px!important}
     .booking-form .booking-section-fields input,.booking-form .booking-section-fields select,.booking-form .booking-section-fields textarea{display:block!important;width:100%!important}
   </style>
-  <link rel="stylesheet" href="assets/styles-v1.9.css" />
+  <link rel="stylesheet" href="assets/styles-v2.1.css" />
 </head>
 <body>
   <div id="appShell" class="app-shell">
@@ -25,14 +25,14 @@
         <div id="brandMark" class="brand-mark">EF</div>
         <div class="brand-copy">
           <strong id="brandName">EventFlow</strong>
-          <span>Booking CRM</span>
+          <span>Event CRM</span>
         </div>
       </div>
 
       <nav id="nav" class="nav">
         <button data-route="dashboard" class="active"><span>⌂</span> Dashboard</button>
         <button data-route="enquiries"><span>✦</span> Enquiries <em id="navEnquiryCount"></em></button>
-        <button data-route="bookings"><span>▣</span> Bookings</button>
+        <button data-route="bookings"><span>▣</span> Events</button>
         <button data-route="calendar"><span>□</span> Calendar</button>
         <button data-route="customers"><span>♙</span> Customers</button>
         <button data-route="invoices"><span>£</span> Invoices</button>
@@ -61,7 +61,7 @@
         </div>
         <div class="top-actions">
           <button id="globalSearchBtn" class="soft-btn">⌕ Search</button>
-          <button id="quickAddBtn" class="primary-btn">＋ New booking</button>
+          <button id="quickAddBtn" class="primary-btn">＋ New event</button>
         </div>
       </header>
       <section id="view" class="view"></section>
@@ -85,6 +85,6 @@
   <div id="toast" class="toast"></div>
   <!-- Address autocomplete: pinned Ideal Postcodes Address Finder browser bundle -->
   <script src="https://cdn.jsdelivr.net/npm/@ideal-postcodes/address-finder-bundled@5"></script>
-  <script src="assets/app-v1.9.js"></script>
+  <script src="assets/app-v2.1.js"></script>
 </body>
 </html>

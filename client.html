@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Booking contract</title>
-  <link rel="stylesheet" href="assets/styles-v1.9.css">
+  <link rel="stylesheet" href="assets/styles-v2.1.css">
   <style>
     :root{
       --paper:#ffffff;
@@ -534,9 +534,9 @@ function render(){
 
       <div class="sheet-footer">
         <div class="signature-box">
-          <div class="signature-title">Please sign and return</div>
-          <div class="signature-line">Signature</div>
-          <div class="signature-line">Date</div>
+          <div class="signature-title">${contractAccepted ? 'Digitally signed' : 'Please sign and return'}</div>
+          <div class="signature-line">${contractAccepted ? esc(b.contractAcceptedBy || customerName(c) || b.customerName || 'Signed online') : 'Signature'}</div>
+          <div class="signature-line">${contractAccepted && b.contractAcceptedAt ? esc(new Intl.DateTimeFormat('en-GB',{dateStyle:'medium',timeStyle:'short'}).format(new Date(b.contractAcceptedAt))) : 'Date'}</div>
         </div>
         <div class="thankyou">Thank you for your business</div>
       </div>
@@ -555,6 +555,7 @@ function render(){
         ? `<div class="success-box" style="padding:14px;background:#eaf8f3;color:#138a60;border-radius:10px"><b>Booking confirmed.</b> Thank you. ${b.contractAcceptedAt ? `Accepted on ${esc(new Intl.DateTimeFormat('en-GB',{dateStyle:'medium',timeStyle:'short'}).format(new Date(b.contractAcceptedAt)))}` : ''}</div>`
         : `<div class="controls">
             <div class="controls-left">
+              <div><label style="display:block;font-size:12px;font-weight:700;margin-bottom:6px">FULL NAME / DIGITAL SIGNATURE</label><input id="signName" style="width:100%;height:44px;border:1px solid var(--line);border-radius:10px;padding:0 12px;font:inherit" value="${esc(customerName(c) || b.customerName || '')}" autocomplete="name"></div>
               <label class="agree-row"><input id="agree" type="checkbox"> <span>I agree to the booking terms and confirm that the booking details above are correct.</span></label>
             </div>
             <div class="controls-right">
@@ -574,16 +575,18 @@ function render(){
 
 async function confirmBooking(){
   if (!$('#agree').checked) return alert('Please tick the box to accept the terms.');
+  const signedName = ($('#signName')?.value || '').trim();
+  if (!signedName) return alert('Please enter your full name to sign the contract.');
   if (mode === 'api') {
     const r = await fetch('/api/public/booking/' + encodeURIComponent(id) + '/confirm', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ name: customerName(payload.customer) || payload.booking.customerName })
+      body:JSON.stringify({ name: signedName })
     });
     if (!r.ok) return alert('Could not confirm booking');
     payload.booking = (await r.json()).booking;
   } else if (mode === 'snapshot') {
-    payload.booking = { ...payload.booking, status:'Confirmed', contractStatus:'Accepted', contractAcceptedAt:new Date().toISOString() };
+    payload.booking = { ...payload.booking, status:'Confirmed', contractStatus:'Accepted', contractAcceptedAt:new Date().toISOString(), contractAcceptedBy:signedName };
     alert('Preview accepted. This is only a local preview and has not updated the CRM. Live acceptance requires the hosted server version.');
   } else {
     const d = JSON.parse(localStorage.getItem(LS));
@@ -592,6 +595,7 @@ async function confirmBooking(){
     b.status = 'Confirmed';
     b.contractStatus = 'Accepted';
     b.contractAcceptedAt = new Date().toISOString();
+    b.contractAcceptedBy = signedName;
     localStorage.setItem(LS, JSON.stringify(d));
     payload.booking = b;
   }

@@ -1,8 +1,24 @@
-# EventFlow CRM
+# EventFlow CRM v2.1
 
-An original, white-label event-business CRM for managing enquiries, customers, bookings, contracts, invoices, payments, services, suppliers/team members, email templates, automation rules and availability.
+An original, white-label event-business CRM for managing enquiries, customers, events, contracts, invoices, payments, services, suppliers/team members, email templates, automation rules and availability.
 
 This project is intentionally **not a copy of Giggio's source code, branding or proprietary UI**. It implements a comparable event-business workflow in an original codebase that you own and can modify.
+
+
+## v2.1 event workflow
+
+The CRM is now centred on the **Event** record:
+
+1. Save the client in **Customers**.
+2. Create a **New Event** and select that saved client.
+3. Save the event.
+4. **Generate Contract** from the Event Overview.
+5. View it, download the event to your diary as `.ics`, or send the contract by email.
+6. The client enters their full name and digitally accepts the contract online. The event becomes **Confirmed / Signed** and, when SMTP is configured, the business email receives a contract-signed notification.
+7. Open **Invoices** and click **Generate invoice** for the event. If the event has a deposit, the CRM creates a **Deposit** invoice and a **Main** invoice for the remaining balance. If the deposit is £0, it creates only the Main invoice for the full total.
+8. **Unpaid Invoices** provides Send, View, Chase, Edit, Credit Note, Bad Debt and Received actions.
+9. **Received** records the payment and asks whether to send a receipt.
+10. The Dashboard updates the Contract, Deposit Invoice and Main Invoice status for every upcoming event automatically.
 
 ## Fastest way to test it
 
@@ -46,18 +62,18 @@ For shared real data, deploy the full Node app to a host such as Render, Railway
 ## Included features
 
 ### Admin
-- Dashboard with upcoming jobs, revenue, outstanding invoices and admin attention list
+- Dashboard with upcoming events plus live Contract / Deposit Invoice / Main Invoice status
 - Enquiry pipeline
 - Convert enquiry → customer + booking
 - Customer CRM
-- Bookings with dates, times, venues, packages, totals, deposits and status
+- Events with dates, times, venues, packages, totals, deposits and status
 - Booking statuses: Enquiry, Date Held, Contract Issued, Confirmed, Completed, Cancelled
 - Contract status tracking
 - Calendar view
-- Invoice generation from bookings
-- Deposit/balance/custom invoices
-- Invoice numbering and payment terms
-- Mark invoices paid and record payment method/reference
+- Event-centred invoice generation
+- Deposit + Main invoice generation (or Main-only when no deposit exists)
+- Unpaid invoice actions: Send, View, Chase, Edit, Credit Note, Bad Debt and Received
+- Invoice numbering, payment terms, partial payments and receipt prompts
 - Service/package catalogue
 - Team, supplier and performer records
 - Email templates with merge-field placeholders
@@ -70,7 +86,7 @@ For shared real data, deploy the full Node app to a host such as Render, Railway
 ### Client-facing
 - Branded web enquiry form
 - Branded booking/contract portal
-- Online booking acceptance
+- Online contract signing with typed full-name digital signature
 - Invoice list in client portal
 - Public availability calendar
 
@@ -139,7 +155,9 @@ The API contains a Stripe Checkout session endpoint. A Stripe webhook endpoint i
 - `PUT /api/settings`
 - `POST /api/enquiries/:id/convert`
 - `POST /api/bookings/:id/confirm`
+- `POST /api/bookings/:id/generate-invoices`
 - `POST /api/bookings/:id/invoice`
+- `POST /api/invoices/:id/credit-note`
 - `POST /api/invoices/:id/mark-paid`
 - `POST /api/public/enquiry`
 - `GET /api/public/bootstrap-lite`

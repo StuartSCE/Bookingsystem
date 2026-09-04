@@ -3,56 +3,67 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const root = path.join(__dirname, '..');
+const app = () => fs.readFileSync(path.join(root,'assets','app-v2.1.js'),'utf8');
 
-test('seed database contains core collections', () => {
+test('seed database contains core CRM collections', () => {
   const db = JSON.parse(fs.readFileSync(path.join(root, 'data', 'db.json'), 'utf8'));
   for (const key of ['settings','enquiries','customers','bookings','invoices','payments','services','performers','emailTemplates','automations','documents']) assert.ok(key in db, `missing ${key}`);
 });
 
-test('root index exists and uses v1.9 assets', () => {
+test('v2.1 index uses cache-busted assets and Events wording', () => {
   const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
-  assert.ok(html.includes('assets/styles-v1.9.css'));
-  assert.ok(html.includes('assets/app-v1.9.js'));
-  assert.ok(html.includes('booking-layout-v19'));
+  assert.ok(html.includes('assets/styles-v2.1.css'));
+  assert.ok(html.includes('assets/app-v2.1.js'));
+  assert.match(html, /> Events<\/button>/);
+  assert.ok(html.includes('＋ New event'));
 });
 
-test('new booking has permanent customer selector and requested sections', () => {
-  const app=fs.readFileSync(path.join(root,'assets','app-v1.9.js'),'utf8');
-  for(const marker of ['bCustomerSearch','bCustomerId','EVENT DETAILS','VENUE DETAILS','TIMINGS','OTHER INFORMATION','FEES','EVENT CONTACT','PAYMENT INSTRUCTIONS']) assert.ok(app.includes(marker),`missing ${marker}`);
-  assert.ok(app.includes("Choose an existing customer before saving the booking"));
+test('new event permanently links a saved customer and keeps the requested event sections', () => {
+  const src=app();
+  for(const marker of ['bCustomerSearch','bCustomerId','EVENT DETAILS','VENUE DETAILS','TIMINGS','OTHER INFORMATION','FEES','EVENT CONTACT','PAYMENT INSTRUCTIONS']) assert.ok(src.includes(marker),`missing ${marker}`);
+  assert.ok(src.includes('Choose an existing customer before saving the event'));
+  assert.ok(src.includes("openModal(id?'Edit event':'New event'"));
 });
 
-test('booking form remains hard single-column', () => {
-  const app=fs.readFileSync(path.join(root,'assets','app-v1.9.js'),'utf8');
-  const start=app.indexOf("openModal(id?'Edit booking':'New booking'");
-  const end=app.indexOf("'Save booking',async()=>{",start);
-  assert.ok(start>=0&&end>start);
-  const block=app.slice(start,end);
-  assert.ok(!block.includes('form-grid'));
-  assert.ok(block.includes('flex-direction:column!important'));
+test('event overview follows contract-first workflow', () => {
+  const src=app();
+  for(const action of ['generateContract','viewContract','sendContract','addDiary','openInvoices','bookingEdit']) assert.ok(src.includes(`id="${action}"`)||src.includes(`$('#${action}')`),`missing ${action}`);
+  assert.ok(src.includes('Generate the contract first'));
+  assert.ok(!src.includes('id="depositInvoice"'), 'event overview should not directly create a deposit invoice');
 });
 
-test('saving a booking navigates to Booking Overview', () => {
-  const app=fs.readFileSync(path.join(root,'assets','app-v1.9.js'),'utf8');
-  assert.ok(app.includes('navigateBooking(saved.id)'));
-  assert.ok(app.includes('function renderBookingOverview(id)'));
-  for(const action of ['sendContract','depositInvoice','sendConfirmation','recordBookingPayment','addBookingService','addBookingNote','bookingEdit']) assert.ok(app.includes(`id="${action}"`)||app.includes(`'#${action}'`)||app.includes(`$('#${action}')`),`missing action ${action}`);
+test('dashboard shows live contract, deposit and main invoice status', () => {
+  const src=app();
+  assert.ok(src.includes("eventContractLabel(b)"));
+  assert.ok(src.includes("eventInvoiceLabel(b,'Deposit')"));
+  assert.ok(src.includes("eventInvoiceLabel(b,'Main')"));
+  assert.ok(src.includes('Upcoming events'));
 });
 
-test('payments support partial invoice payments', () => {
+test('invoice page has event generation and full unpaid invoice actions', () => {
+  const src=app();
+  assert.ok(src.includes('generateEventInvoices'));
+  for(const label of ['Unpaid invoices','Send','View','Chase','Edit','Credit note','Bad debt','Received']) assert.ok(src.includes(label),`missing ${label}`);
+  assert.ok(src.includes("make('Deposit'"));
+  assert.ok(src.includes("make('Main'"));
+  assert.ok(src.includes('Yes — send receipt'));
+});
+
+test('server supports atomic invoice generation, credit notes and partial payments', () => {
   const server=fs.readFileSync(path.join(root,'server.js'),'utf8');
+  assert.ok(server.includes("/api/bookings/:recordId/generate-invoices"));
+  assert.ok(server.includes("/api/invoices/:recordId/credit-note"));
   assert.ok(server.includes("'Part Paid'"));
-  assert.ok(server.includes('paidTotal'));
   assert.ok(server.includes('Payment exceeds the remaining invoice balance'));
+  assert.ok(server.includes("make('Main'"));
 });
 
-
-test('v1.9 static contract links use a snapshot preview and live contract email is guarded', () => {
-  const app = fs.readFileSync(path.join(root, 'assets', 'app-v1.9.js'), 'utf8');
-  const client = fs.readFileSync(path.join(root, 'client.html'), 'utf8');
-  assert.match(app, /encodePortalSnapshot/);
-  assert.match(app, /portalIsExternallyReachable/);
-  assert.match(app, /Do not email this contract link to a customer yet/);
-  assert.match(client, /decodeSnapshot/);
-  assert.match(client, /Local preview only/);
+test('digital contract signing records signer and triggers admin notification email when SMTP is configured', () => {
+  const client=fs.readFileSync(path.join(root,'client.html'),'utf8');
+  const server=fs.readFileSync(path.join(root,'server.js'),'utf8');
+  assert.ok(client.includes('id="signName"'));
+  assert.ok(client.includes('FULL NAME / DIGITAL SIGNATURE'));
+  assert.ok(server.includes('Contract signed – ${booking.title}'));
+  assert.ok(server.includes('contractSignedNotificationSentAt'));
+  assert.ok(server.includes("contract.status = 'Accepted'"));
 });
