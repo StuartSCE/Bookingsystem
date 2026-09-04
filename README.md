@@ -229,3 +229,7 @@ The browser bundle is pinned to `@ideal-postcodes/address-finder-bundled@5` in `
 ## v1.4 booking form
 
 The New Booking form now includes Date, Event Title, Entertainment, Venue Details with address autocomplete, Timings, Other Information, and Fees. Grand Total is calculated from Fee + Other Services Total, and selecting an Entertainment service can prefill its fee and deposit. Existing bookings retain management controls for status, contract status and linked customer.
+
+
+### v1.7 booking layout fix
+The New Booking modal now hard-forces each major section and all of its fields into a single vertical column. Versioned asset filenames and inline critical CSS prevent stale browser-cached two-column styles from reappearing.
