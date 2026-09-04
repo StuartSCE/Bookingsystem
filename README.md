@@ -224,3 +224,8 @@ The **Customers → New customer → Main Address → Quick Search** field is wi
 - Address fields always remain editable manually, so a lookup outage or exhausted balance never blocks customer creation.
 
 The browser bundle is pinned to `@ideal-postcodes/address-finder-bundled@5` in `index.html`.
+
+
+## v1.4 booking form
+
+The New Booking form now includes Date, Event Title, Entertainment, Venue Details with address autocomplete, Timings, Other Information, and Fees. Grand Total is calculated from Fee + Other Services Total, and selecting an Entertainment service can prefill its fee and deposit. Existing bookings retain management controls for status, contract status and linked customer.

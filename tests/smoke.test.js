@@ -13,3 +13,14 @@ test('seed database contains core collections', () => {
 test('root index exists', () => {
   assert.ok(fs.existsSync(path.join(__dirname, '..', 'index.html')));
 });
+
+test('new booking form contains requested sections and fields', () => {
+  const app = fs.readFileSync(path.join(__dirname, '..', 'assets', 'app.js'), 'utf8');
+  for (const marker of [
+    'DATE</label>', 'EVENT TITLE', 'ENTERTAINMENT', 'VENUE DETAILS', 'ADDRESS QUICK SEARCH',
+    'VENUE NAME', 'VENUE ADDRESS', 'VENUE POSTCODE', 'VENUE TELEPHONE', 'VENUE NOTES',
+    'ARRIVAL TIME', 'START TIME', 'FINISH TIME', 'No Finish Time', 'Shift Time Zone',
+    'EVENT CONTACT', 'DRESS CODE', 'NO. OF GUESTS', 'OTHER SERVICES TOTAL', 'GRAND TOTAL',
+    'DEPOSIT', 'PAYMENT INSTRUCTIONS'
+  ]) assert.ok(app.includes(marker), `missing booking field/section: ${marker}`);
+});

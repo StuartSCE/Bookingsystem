@@ -405,7 +405,164 @@
     }
   }
 
-  function openBooking(id=null){const b=id?(state.bookings||[]).find(x=>x.id===id):{};const selectedCustomer=b.customerId||'';openModal(id?'Manage booking':'New booking','EVENT',`<div class="form-grid"><div class="field full"><label>BOOKING TITLE</label><input id="bTitle" value="${esc(b.title||'')}"></div><div class="field"><label>CUSTOMER</label><select id="bCustomer"><option value="">Choose…</option>${(state.customers||[]).map(c=>`<option value="${c.id}" ${selectedCustomer===c.id?'selected':''}>${esc(customerDisplayName(c))}</option>`).join('')}</select></div><div class="field"><label>STATUS</label><select id="bStatus">${['Enquiry','Date Held','Contract Issued','Confirmed','Completed','Cancelled'].map(x=>`<option ${b.status===x?'selected':''}>${x}</option>`).join('')}</select></div><div class="field"><label>EVENT DATE</label><input id="bDate" type="date" value="${esc(b.eventDate||'')}"></div><div class="field"><label>EVENT TYPE</label><input id="bType" value="${esc(b.eventType||'')}"></div><div class="field"><label>START TIME</label><input id="bStart" type="time" value="${esc(b.startTime||'')}"></div><div class="field"><label>END TIME</label><input id="bEnd" type="time" value="${esc(b.endTime||'')}"></div><div class="field full"><label>VENUE</label><input id="bVenue" value="${esc(b.venue||'')}"></div><div class="field"><label>SERVICE</label><select id="bService"><option value="">Choose…</option>${(state.services||[]).map(s=>`<option value="${s.id}" ${b.serviceId===s.id?'selected':''}>${esc(s.name)}</option>`).join('')}</select></div><div class="field"><label>TOTAL PRICE</label><input id="bTotal" type="number" step="0.01" value="${esc(b.total||'')}"></div><div class="field"><label>DEPOSIT</label><input id="bDeposit" type="number" step="0.01" value="${esc(b.deposit||'')}"></div><div class="field"><label>CONTRACT STATUS</label><select id="bContract">${['Draft','Sent','Accepted','Declined'].map(x=>`<option ${b.contractStatus===x?'selected':''}>${x}</option>`).join('')}</select></div><div class="field full"><label>NOTES</label><textarea id="bNotes">${esc(b.notes||'')}</textarea></div>${id?`<div class="field full"><div class="notice">Client portal link: <b>client.html?booking=${esc(b.id)}</b>. Send this link to let the client review and accept the booking terms.</div></div>`:''}</div>`,'Save booking',async()=>{const customer=(state.customers||[]).find(c=>c.id===val('#bCustomer'));const svc=(state.services||[]).find(s=>s.id===val('#bService'));const total=Number(val('#bTotal')||0),dep=Number(val('#bDeposit')||0);const data={customerId:customer?.id||'',customerName:customerDisplayName(customer),title:val('#bTitle'),eventType:val('#bType'),eventDate:val('#bDate'),startTime:val('#bStart'),endTime:val('#bEnd'),venue:val('#bVenue'),serviceId:svc?.id||'',serviceName:svc?.name||'',status:val('#bStatus'),contractStatus:val('#bContract'),total,deposit:dep,balance:Math.max(0,total-dep),notes:val('#bNotes'),assignedPerformerIds:b.assignedPerformerIds||[]};if(!data.title||!data.customerId||!data.eventDate)return toast('Title, customer and event date are required');id?await updateRecord('bookings',id,data):await createRecord('bookings',data);modal.close();toast('Booking saved');render()},id?`<button type="button" class="danger-btn" id="deleteBooking">Delete</button><button type="button" class="outline-btn" id="createInvoiceFromBooking">Create invoice</button>`:'');const svcEl=$('#bService');if(!id&&svcEl)svcEl.onchange=()=>{const s=(state.services||[]).find(x=>x.id===svcEl.value);if(s){$('#bTotal').value=s.price;$('#bDeposit').value=Number(s.price)*Number(s.depositPercent||state.settings.defaultDepositPercent||25)/100}};if(id){$('#deleteBooking').onclick=async()=>{if(await deleteRecord('bookings',id)){modal.close();render()}};$('#createInvoiceFromBooking').onclick=()=>{modal.close();openInvoiceCreate(id)}}}
+  function openBooking(id=null){
+    const b=id?(state.bookings||[]).find(x=>x.id===id):{};
+    const entertainmentId=b.entertainmentId||b.serviceId||'';
+    const entertainmentName=b.entertainment||b.serviceName||'';
+    const fee=Number(b.fee ?? b.total ?? 0);
+    const otherServicesTotal=Number(b.otherServicesTotal||0);
+    const grandTotal=Number(b.grandTotal ?? b.total ?? (fee+otherServicesTotal));
+    const finishTime=b.finishTime ?? b.endTime ?? '';
+    const noFinishTime=Boolean(b.noFinishTime);
+    const eventContact=b.eventContact||b.customerName||'';
+    const venueName=b.venueName||b.venue||'';
+
+    openModal(id?'Manage booking':'New booking','EVENT',`<div class="form-grid">
+      <div class="field"><label>DATE</label><input id="bDate" type="date" value="${esc(b.eventDate||'')}"></div>
+      <div class="field"><label>EVENT TITLE</label><input id="bTitle" value="${esc(b.title||'')}"></div>
+      <div class="field full"><label>ENTERTAINMENT</label><select id="bEntertainment"><option value="">Choose…</option>${(state.services||[]).map(s=>`<option value="${s.id}" ${entertainmentId===s.id||(!entertainmentId&&entertainmentName===s.name)?'selected':''}>${esc(s.name)}</option>`).join('')}</select></div>
+
+      <div class="form-section full"><div class="form-section-title"><strong>VENUE DETAILS</strong></div></div>
+      <div class="field full"><label>ADDRESS QUICK SEARCH</label><input id="bVenueQuickSearch" value="${esc(b.venueQuickSearch||'')}" placeholder="Start typing a venue, address or postcode…" autocomplete="off"><div class="helper" id="bookingAddressLookupStatus">Start typing and choose an address from the suggestions.</div></div>
+      <div class="field full"><label>VENUE NAME</label><input id="bVenueName" value="${esc(venueName)}"></div>
+      <div class="field full"><label>VENUE ADDRESS</label><textarea id="bVenueAddress">${esc(b.venueAddress||'')}</textarea></div>
+      <div class="field"><label>VENUE POSTCODE</label><input id="bVenuePostcode" value="${esc(b.venuePostcode||'')}"></div>
+      <div class="field"><label>VENUE TELEPHONE</label><input id="bVenueTelephone" type="tel" value="${esc(b.venueTelephone||'')}"></div>
+      <div class="field full"><label>VENUE NOTES</label><textarea id="bVenueNotes">${esc(b.venueNotes||b.notes||'')}</textarea></div>
+
+      <div class="form-section full"><div class="form-section-title"><strong>TIMINGS</strong> <span class="helper">(enter in HH:mm format)</span></div></div>
+      <div class="field"><label>ARRIVAL TIME</label><input id="bArrivalTime" type="time" value="${esc(b.arrivalTime||'')}"></div>
+      <div class="field"><label>START TIME</label><input id="bStartTime" type="time" value="${esc(b.startTime||'')}"></div>
+      <div class="field"><label>FINISH TIME</label><input id="bFinishTime" type="time" value="${esc(finishTime)}" ${noFinishTime?'disabled':''}></div>
+      <div class="field"><label>&nbsp;</label><label class="toggle"><input id="bNoFinishTime" type="checkbox" ${noFinishTime?'checked':''}> No Finish Time</label></div>
+      <div class="field full"><label class="toggle"><input id="bShiftTimeZone" type="checkbox" ${b.shiftTimeZone?'checked':''}> Shift Time Zone</label></div>
+
+      <div class="form-section full"><div class="form-section-title"><strong>OTHER INFORMATION</strong></div></div>
+      <div class="field"><label>EVENT CONTACT</label><input id="bEventContact" list="bookingCustomerNames" value="${esc(eventContact)}"><datalist id="bookingCustomerNames">${(state.customers||[]).map(c=>`<option value="${esc(customerDisplayName(c))}"></option>`).join('')}</datalist></div>
+      <div class="field"><label>TELEPHONE</label><input id="bEventTelephone" type="tel" value="${esc(b.eventTelephone||'')}"></div>
+      <div class="field"><label>DRESS CODE</label><input id="bDressCode" value="${esc(b.dressCode||'')}"></div>
+      <div class="field"><label>NO. OF GUESTS</label><input id="bGuestCount" type="number" min="0" step="1" value="${esc(b.guestCount??'')}"></div>
+
+      <div class="form-section full"><div class="form-section-title"><strong>FEES</strong></div></div>
+      <div class="field"><label>FEE</label><input id="bFee" type="number" min="0" step="0.01" value="${esc(fee||'')}"></div>
+      <div class="field"><label>OTHER SERVICES TOTAL</label><input id="bOtherServicesTotal" type="number" min="0" step="0.01" value="${esc(otherServicesTotal)}" readonly><div class="helper">Calculated from additional services when added.</div></div>
+      <div class="field"><label>GRAND TOTAL</label><input id="bGrandTotal" type="number" step="0.01" value="${esc(grandTotal)}" readonly></div>
+      <div class="field"><label>DEPOSIT</label><input id="bDeposit" type="number" min="0" step="0.01" value="${esc(b.deposit||'')}"></div>
+      <div class="field full"><label>PAYMENT INSTRUCTIONS</label><textarea id="bPaymentInstructions" placeholder="e.g. Bank transfer details, payment schedule or client instructions…">${esc(b.paymentInstructions||'')}</textarea></div>
+      ${id?`
+        <div class="form-section full"><div class="form-section-title"><strong>BOOKING MANAGEMENT</strong></div></div>
+        <div class="field"><label>STATUS</label><select id="bStatus">${['Enquiry','Date Held','Contract Issued','Confirmed','Completed','Cancelled'].map(x=>`<option ${b.status===x?'selected':''}>${x}</option>`).join('')}</select></div>
+        <div class="field"><label>CONTRACT STATUS</label><select id="bContractStatus">${['Draft','Sent','Accepted','Declined'].map(x=>`<option ${b.contractStatus===x?'selected':''}>${x}</option>`).join('')}</select></div>
+        <div class="field full"><label>LINKED CUSTOMER</label><select id="bCustomer"><option value="">None</option>${(state.customers||[]).map(c=>`<option value="${c.id}" ${b.customerId===c.id?'selected':''}>${esc(customerDisplayName(c))}</option>`).join('')}</select></div>
+        <div class="field full"><div class="notice">Client portal link: <b>client.html?booking=${esc(b.id)}</b>.</div></div>`:''}
+    </div>`,'Save booking',async()=>{
+      const svc=(state.services||[]).find(s=>s.id===val('#bEntertainment'));
+      const eventContact=val('#bEventContact');
+      const selectedCustomer=id&&$('#bCustomer')?(state.customers||[]).find(c=>c.id===val('#bCustomer')):null;
+      const matchedCustomer=selectedCustomer||(state.customers||[]).find(c=>customerDisplayName(c).toLowerCase()===eventContact.toLowerCase());
+      const fee=Number(val('#bFee')||0);
+      const other=Number(val('#bOtherServicesTotal')||0);
+      const grand=fee+other;
+      const dep=Number(val('#bDeposit')||0);
+      const noFinish=$('#bNoFinishTime')?.checked||false;
+      const data={
+        eventDate:val('#bDate'),
+        title:val('#bTitle'),
+        entertainmentId:svc?.id||'',
+        entertainment:svc?.name||'',
+        serviceId:svc?.id||'',
+        serviceName:svc?.name||'',
+        venueQuickSearch:val('#bVenueQuickSearch'),
+        venueName:val('#bVenueName'),
+        venueAddress:val('#bVenueAddress'),
+        venuePostcode:val('#bVenuePostcode'),
+        venueTelephone:val('#bVenueTelephone'),
+        venueNotes:val('#bVenueNotes'),
+        venue:val('#bVenueName'),
+        arrivalTime:val('#bArrivalTime'),
+        startTime:val('#bStartTime'),
+        finishTime:noFinish?'':val('#bFinishTime'),
+        endTime:noFinish?'':val('#bFinishTime'),
+        noFinishTime:noFinish,
+        shiftTimeZone:$('#bShiftTimeZone')?.checked||false,
+        eventContact,
+        eventTelephone:val('#bEventTelephone'),
+        dressCode:val('#bDressCode'),
+        guestCount:Number(val('#bGuestCount')||0),
+        fee,
+        otherServicesTotal:other,
+        grandTotal:grand,
+        total:grand,
+        deposit:dep,
+        balance:Math.max(0,grand-dep),
+        paymentInstructions:val('#bPaymentInstructions'),
+        customerId:matchedCustomer?.id||b.customerId||'',
+        customerName:matchedCustomer?customerDisplayName(matchedCustomer):(b.customerName||eventContact),
+        status:id&&$('#bStatus')?val('#bStatus'):(b.status||'Date Held'),
+        contractStatus:id&&$('#bContractStatus')?val('#bContractStatus'):(b.contractStatus||'Draft'),
+        assignedPerformerIds:b.assignedPerformerIds||[],
+        notes:val('#bVenueNotes')
+      };
+      if(!data.eventDate||!data.title)return toast('Date and Event Title are required');
+      id?await updateRecord('bookings',id,data):await createRecord('bookings',data);
+      modal.close();toast('Booking saved');render();
+    },id?`<button type="button" class="danger-btn" id="deleteBooking">Delete</button><button type="button" class="outline-btn" id="createInvoiceFromBooking">Create invoice</button>`:'');
+
+    const entertainment=$('#bEntertainment');
+    const feeInput=$('#bFee');
+    const otherInput=$('#bOtherServicesTotal');
+    const grandInput=$('#bGrandTotal');
+    const depositInput=$('#bDeposit');
+    const recalc=()=>{const total=Number(feeInput?.value||0)+Number(otherInput?.value||0);if(grandInput)grandInput.value=total.toFixed(2)};
+    if(entertainment)entertainment.onchange=()=>{const s=(state.services||[]).find(x=>x.id===entertainment.value);if(s){feeInput.value=Number(s.price||0).toFixed(2);const pct=Number(s.depositPercent??state.settings.defaultDepositPercent??25);depositInput.value=(Number(s.price||0)*pct/100).toFixed(2);recalc()}};
+    if(feeInput)feeInput.oninput=recalc;
+    const noFinish=$('#bNoFinishTime');
+    if(noFinish)noFinish.onchange=()=>{const finish=$('#bFinishTime');finish.disabled=noFinish.checked;if(noFinish.checked)finish.value=''};
+    if(id){
+      $('#deleteBooking').onclick=async()=>{if(await deleteRecord('bookings',id)){modal.close();render()}};
+      $('#createInvoiceFromBooking').onclick=()=>{modal.close();openInvoiceCreate(id)};
+    }
+    initBookingAddressFinder();
+    recalc();
+  }
+
+  function initBookingAddressFinder(){
+    const input=$('#bVenueQuickSearch');
+    if(!input)return;
+    const status=$('#bookingAddressLookupStatus');
+    const key=state.settings?.addressFinderApiKey||'ak_test';
+    if(!window.IdealPostcodes?.AddressFinder){
+      if(status)status.textContent='Address lookup could not load. You can still enter the venue manually.';
+      return;
+    }
+    try{
+      window.IdealPostcodes.AddressFinder.setup({
+        apiKey:key,
+        inputField:'#bVenueQuickSearch',
+        detectCountry:false,
+        defaultCountry:'GBR',
+        restrictCountries:['GBR'],
+        hideToolbar:true,
+        outputFields:{postcode:'#bVenuePostcode'},
+        onAddressRetrieved:(address)=>{
+          const venueName=address.organisation_name||address.building_name||'';
+          const lines=[address.line_1,address.line_2,address.line_3,address.post_town,address.county,address.country].filter(Boolean);
+          if(venueName&&!$('#bVenueName').value)$('#bVenueName').value=venueName;
+          $('#bVenueAddress').value=lines.join('\n');
+          $('#bVenuePostcode').value=address.postcode||'';
+          input.value=[venueName,address.line_1,address.post_town,address.postcode].filter(Boolean).join(', ');
+          if(status)status.innerHTML='<b>Venue address found.</b> Check the venue name and address before saving.';
+        },
+        onLoaded:()=>{if(status)status.textContent='Start typing a venue, address or postcode and choose a result.';},
+        onFailedCheck:()=>{if(status)status.innerHTML='Address lookup key is not valid or has no credits. Add your Ideal Postcodes API key in <b>Settings → Address lookup</b>, or enter the venue manually.';},
+        onSearchError:(err)=>{if(status)status.textContent=err?.message||'Venue address lookup failed. Please enter it manually.';},
+        onSuggestionError:(err)=>{if(status)status.textContent=err?.message||'Address suggestions are temporarily unavailable.';}
+      });
+    }catch(err){
+      if(status)status.textContent='Venue address lookup could not start. You can enter the venue manually.';
+      console.warn('Booking Address Finder:',err);
+    }
+  }
 
   function openInvoiceCreate(bookingId=''){const b=(state.bookings||[]).find(x=>x.id===bookingId);openModal('Create invoice','BILLING',`<div class="form-grid"><div class="field full"><label>BOOKING</label><select id="iBooking"><option value="">Choose…</option>${(state.bookings||[]).map(x=>`<option value="${x.id}" ${bookingId===x.id?'selected':''}>${esc(x.title)} — ${esc(x.customerName)}</option>`).join('')}</select></div><div class="field"><label>TYPE</label><select id="iType"><option>Deposit</option><option ${b?'selected':''}>Balance</option><option>Custom</option></select></div><div class="field"><label>AMOUNT</label><input id="iAmount" type="number" step="0.01" value="${esc(b?.balance||'')}"></div><div class="field full"><label>DESCRIPTION</label><input id="iDescription" value="${esc(b?`Balance - ${b.title}`:'')}"></div></div>`,'Create invoice',async()=>{const bid=val('#iBooking'),booking=(state.bookings||[]).find(x=>x.id===bid);if(!booking)return toast('Choose a booking');const type=val('#iType'),amount=Number(val('#iAmount')||0);if(mode==='api'){await api(`/api/bookings/${bid}/invoice`,{method:'POST',body:JSON.stringify({type,amount,description:val('#iDescription')})});await refresh()}else{const n=`${state.settings.invoicePrefix||'INV-'}${state.settings.nextInvoiceNumber||1}`;state.settings.nextInvoiceNumber=Number(state.settings.nextInvoiceNumber||1)+1;const due=new Date();due.setDate(due.getDate()+Number(state.settings.paymentTermsDays||14));state.invoices.unshift({id:uid('inv'),createdAt:isoNow(),number:n,bookingId:bid,customerId:booking.customerId,customerName:booking.customerName,type,issueDate:ymd(),dueDate:ymd(due),amount,status:'Draft',paidAt:null,description:val('#iDescription')||`${type} - ${booking.title}`});addActivity('invoice',`Invoice ${n} created`);saveLocal()}modal.close();toast('Invoice created');go('invoices')});const select=$('#iBooking'),type=$('#iType');const autoAmount=()=>{const bb=(state.bookings||[]).find(x=>x.id===select.value);if(bb){$('#iAmount').value=type.value==='Deposit'?bb.deposit:bb.balance;$('#iDescription').value=`${type.value} - ${bb.title}`}};select.onchange=autoAmount;type.onchange=autoAmount}
 
