@@ -1,6 +1,604 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Booking portal</title><link rel="stylesheet" href="assets/styles-v1.9.css"><style>body{background:#f3f5f9}.portal{max-width:850px;margin:35px auto;padding:0 16px}.portal-card{background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);padding:28px}.portal-top{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}.portal-logo{max-width:140px;max-height:70px;object-fit:contain}.detail-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:20px}.detail{padding:14px;border:1px solid var(--line);border-radius:12px}.detail span{display:block;color:var(--muted);font-size:10px;margin-bottom:4px}.contract{margin-top:20px;padding:18px;background:#fafbfc;border:1px solid var(--line);border-radius:12px;white-space:pre-line}.invoice-row{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}@media(max-width:600px){.portal{margin:10px auto}.portal-card{padding:20px}.detail-grid{grid-template-columns:1fr}}</style></head><body><div class="portal"><div id="content" class="portal-card">Loading booking…</div></div><script>
-const $=s=>document.querySelector(s),LS='eventflow_crm_v1',id=new URLSearchParams(location.search).get('booking');let mode='local',payload=null;const money=(n,c='GBP')=>new Intl.NumberFormat('en-GB',{style:'currency',currency:c}).format(Number(n||0));const date=v=>v?new Intl.DateTimeFormat('en-GB',{day:'2-digit',month:'long',year:'numeric'}).format(new Date(v+'T12:00:00')):'—';const customerName=c=>{const p=[c?.title,c?.firstName,c?.surname].filter(Boolean).join(' ').trim();return p||c?.name||c?.company||''};function decodeSnapshot(){try{const raw=new URLSearchParams(location.hash.replace(/^#/,'' )).get('snapshot');if(!raw)return null;let b64=raw.replace(/-/g,'+').replace(/_/g,'/');while(b64.length%4)b64+='=';const bin=atob(b64),bytes=Uint8Array.from(bin,c=>c.charCodeAt(0));return JSON.parse(new TextDecoder().decode(bytes))}catch{return null}}async function init(){if(!id){$('#content').innerHTML='<b>No booking reference supplied.</b>';return}const snap=decodeSnapshot();if(snap?.booking?.id===id){payload=snap;mode='snapshot'}if(!payload&&location.protocol!=='file:'){try{const r=await fetch('/api/public/booking/'+encodeURIComponent(id));if(r.ok){payload=await r.json();mode='api'}}catch{}}if(!payload){let d;try{d=JSON.parse(localStorage.getItem(LS))}catch{};if(!d){try{const r=await fetch('data/db.json');if(r.ok)d=await r.json()}catch{}}if(d){const b=(d.bookings||[]).find(x=>x.id===id);if(b)payload={settings:d.settings,booking:b,customer:(d.customers||[]).find(x=>x.id===b.customerId),invoices:(d.invoices||[]).filter(x=>x.bookingId===b.id)}}}if(!payload){$('#content').innerHTML='<b>Booking not found.</b><p style="color:#667085">This booking is not available from this browser. Live client links require the CRM to be running on its shared server.</p>';return}render()}
-function render(){const {settings:s={},booking:b,customer:c={},invoices=[]}=payload;document.documentElement.style.setProperty('--accent',s.accent||'#6d5dfc');$('#content').innerHTML=(mode==='snapshot'?'<div style="padding:12px 14px;margin-bottom:18px;background:#fff7e6;border:1px solid #f0d28a;border-radius:10px;color:#7a5700"><b>Local preview only.</b> This copy is not connected to the CRM server. It lets you check the contract layout, but acceptance here will not update the main CRM.</div>':'')+'<div class="portal-top"><div>'+(s.logoUrl?'<img class="portal-logo" src="'+s.logoUrl+'">':'<h2 style="margin:0">'+(s.businessName||'Your Event Business')+'</h2>')+'</div><span class="badge '+(b.status==='Confirmed'?'success':'warning')+'">'+b.status+'</span></div><h1 style="margin:24px 0 4px">'+b.title+'</h1><div class="cell-sub">Booking for '+(customerName(c)||b.customerName)+'</div><div class="detail-grid"><div class="detail"><span>EVENT DATE</span><b>'+date(b.eventDate)+'</b></div><div class="detail"><span>TIME</span><b>'+(b.startTime||'TBC')+(b.endTime?' – '+b.endTime:'')+'</b></div><div class="detail"><span>VENUE</span><b>'+(b.venue||'TBC')+'</b></div><div class="detail"><span>SERVICE</span><b>'+(b.serviceName||'—')+'</b></div><div class="detail"><span>TOTAL</span><b>'+money(b.total,s.currency||'GBP')+'</b></div><div class="detail"><span>CONTRACT</span><b>'+b.contractStatus+'</b></div></div><div class="contract"><b>Booking terms</b><br><br>'+(s.terms||'Please review and accept the booking terms.')+'</div>'+(b.contractStatus!=='Accepted'?'<div style="margin-top:16px"><label class="toggle"><input id="agree" type="checkbox"> I agree to the booking terms above.</label><br><button id="confirm" class="primary-btn" style="margin-top:12px">Accept & confirm booking</button></div>':'<div class="success-box" style="margin-top:16px;padding:14px;background:#eaf8f3;color:#138a60;border-radius:10px"><b>Booking confirmed.</b> Thank you.</div>')+(invoices.length?'<h3 style="margin-top:26px">Invoices</h3>'+invoices.map(i=>'<div class="invoice-row"><div><b>'+i.number+'</b><div class="cell-sub">'+i.type+' · due '+date(i.dueDate)+'</div></div><div style="text-align:right"><b>'+money(i.amount,s.currency||'GBP')+'</b><div>'+i.status+'</div>'+(mode==='api'&&i.status!=='Paid'?'<button class="outline-btn pay-btn" data-invoice="'+i.id+'" style="margin-top:6px">Pay online</button>':'')+'</div></div>').join(''):'');document.querySelectorAll('.pay-btn').forEach(btn=>btn.onclick=()=>payInvoice(btn.dataset.invoice));if($('#confirm'))$('#confirm').onclick=confirmBooking}
-async function payInvoice(invoiceId){const r=await fetch('/api/public/invoices/'+encodeURIComponent(invoiceId)+'/checkout',{method:'POST'});const o=await r.json();if(!r.ok)return alert(o.error||'Could not start payment');location.href=o.url}
-async function confirmBooking(){if(!$('#agree').checked)return alert('Please tick the box to accept the terms.');if(mode==='api'){const r=await fetch('/api/public/booking/'+encodeURIComponent(id)+'/confirm',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:customerName(payload.customer)||payload.booking.customerName})});if(!r.ok)return alert('Could not confirm booking');payload.booking=(await r.json()).booking}else if(mode==='snapshot'){payload.booking={...payload.booking,status:'Confirmed',contractStatus:'Accepted',contractAcceptedAt:new Date().toISOString()};alert('Preview accepted. This is only a local preview and has not updated the CRM. Live acceptance requires the hosted server version.')}else{const d=JSON.parse(localStorage.getItem(LS));const b=(d.bookings||[]).find(x=>x.id===id);if(!b)return alert('Booking not found in this browser.');b.status='Confirmed';b.contractStatus='Accepted';b.contractAcceptedAt=new Date().toISOString();localStorage.setItem(LS,JSON.stringify(d));payload.booking=b}render()};init();
-</script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Booking contract</title>
+  <link rel="stylesheet" href="assets/styles-v1.9.css">
+  <style>
+    :root{
+      --paper:#ffffff;
+      --page-bg:#eef1f6;
+      --ink:#1f2937;
+      --muted:#667085;
+      --line:#d8dee8;
+      --heading:#8a1f1b;
+      --soft:#f7f8fb;
+      --shadow:0 20px 45px rgba(15,23,42,.12);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:var(--page-bg);
+      color:var(--ink);
+      font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    }
+    .portal{
+      max-width:980px;
+      margin:32px auto;
+      padding:0 18px 36px;
+    }
+    .preview-note,
+    .missing-note,
+    .action-card{
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:16px;
+      box-shadow:0 8px 24px rgba(15,23,42,.06);
+    }
+    .preview-note{
+      margin-bottom:16px;
+      padding:14px 16px;
+      background:#fff8e8;
+      border-color:#f1d48a;
+      color:#7a5700;
+    }
+    .missing-note{
+      padding:20px;
+    }
+    .contract-sheet{
+      background:var(--paper);
+      border:1px solid #cfd5df;
+      box-shadow:var(--shadow);
+      min-height:1120px;
+      padding:72px 58px 62px;
+      position:relative;
+    }
+    .contract-top{
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:28px;
+      align-items:start;
+      margin-bottom:34px;
+    }
+    .recipient-address{
+      min-height:120px;
+      white-space:pre-line;
+      font-size:15px;
+      line-height:1.55;
+      color:#111827;
+    }
+    .brand-wrap{
+      text-align:right;
+    }
+    .brand-logo{
+      max-width:210px;
+      max-height:145px;
+      object-fit:contain;
+      display:block;
+      margin-left:auto;
+    }
+    .brand-name{
+      font-size:15px;
+      font-weight:700;
+      margin:0;
+    }
+    .meta-row{
+      display:flex;
+      justify-content:flex-end;
+      margin-bottom:18px;
+    }
+    .meta-block{
+      text-align:right;
+      font-size:15px;
+      line-height:1.35;
+      color:#111827;
+    }
+    .contract-title{
+      margin:0 0 14px;
+      color:var(--heading);
+      font-size:28px;
+      font-weight:500;
+      letter-spacing:.02em;
+      text-transform:uppercase;
+    }
+    .title-rule{
+      border:0;
+      border-top:2px solid #bf6e6b;
+      margin:0 0 20px;
+    }
+    .details-table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0 10px;
+      table-layout:fixed;
+      margin:0 auto;
+    }
+    .details-table th,
+    .details-table td{
+      vertical-align:top;
+    }
+    .details-table th{
+      width:210px;
+      padding-right:18px;
+      text-align:right;
+      color:var(--heading);
+      font-size:15px;
+      font-weight:500;
+      text-transform:uppercase;
+      letter-spacing:.02em;
+    }
+    .details-table td{
+      color:#111827;
+      font-size:15px;
+      line-height:1.45;
+      word-break:break-word;
+    }
+    .spacer-row th,
+    .spacer-row td{
+      padding-top:14px;
+    }
+    .notes-value{
+      white-space:pre-line;
+      min-height:54px;
+    }
+    .terms-block,
+    .invoices-block{
+      margin-top:26px;
+      padding-top:16px;
+      border-top:1px solid #e3e8ef;
+    }
+    .section-kicker{
+      margin:0 0 10px;
+      color:var(--heading);
+      font-size:14px;
+      font-weight:600;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+    .terms-copy{
+      color:#344054;
+      font-size:14px;
+      line-height:1.65;
+      white-space:pre-line;
+    }
+    .invoice-item{
+      display:flex;
+      justify-content:space-between;
+      gap:20px;
+      padding:9px 0;
+      border-bottom:1px solid #eef2f7;
+      font-size:14px;
+    }
+    .invoice-item:last-child{
+      border-bottom:0;
+    }
+    .invoice-meta{
+      color:var(--muted);
+      font-size:12px;
+      margin-top:3px;
+    }
+    .sheet-footer{
+      margin-top:110px;
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-end;
+      gap:24px;
+    }
+    .signature-box{
+      width:230px;
+      border:2px solid #c9c9c9;
+      border-radius:18px;
+      padding:10px;
+      background:#f3f3f3;
+    }
+    .signature-title{
+      margin:0 0 10px;
+      font-weight:800;
+      font-size:15px;
+      text-transform:uppercase;
+      color:#333;
+    }
+    .signature-line{
+      height:32px;
+      background:#fff;
+      border:1px solid #c7c7c7;
+      display:flex;
+      align-items:flex-end;
+      padding:4px 8px;
+      color:#9ca3af;
+      font-size:11px;
+      text-transform:uppercase;
+      margin-top:8px;
+    }
+    .thankyou{
+      margin-left:auto;
+      color:var(--heading);
+      font-size:16px;
+      text-align:right;
+      white-space:nowrap;
+    }
+    .action-card{
+      margin-top:18px;
+      padding:18px;
+    }
+    .action-head{
+      display:flex;
+      justify-content:space-between;
+      gap:14px;
+      align-items:center;
+      margin-bottom:12px;
+      flex-wrap:wrap;
+    }
+    .action-head h3{
+      margin:0;
+      font-size:18px;
+    }
+    .action-sub{
+      color:var(--muted);
+      font-size:14px;
+      margin-top:4px;
+    }
+    .status-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 12px;
+      border-radius:999px;
+      background:#eef2ff;
+      color:#3b3f98;
+      font-weight:700;
+      font-size:13px;
+    }
+    .status-pill.success{background:#e8f7ef;color:#13795b}
+    .controls{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      flex-wrap:wrap;
+      margin-top:14px;
+    }
+    .controls-left{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      flex:1 1 320px;
+    }
+    .agree-row{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      color:#344054;
+      font-size:14px;
+    }
+    .agree-row input{
+      margin-top:2px;
+      width:16px;
+      height:16px;
+    }
+    .controls-right{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+    .portal-btn{
+      appearance:none;
+      border:1px solid var(--line);
+      background:#fff;
+      color:#111827;
+      border-radius:12px;
+      height:44px;
+      padding:0 16px;
+      font-size:14px;
+      font-weight:600;
+      cursor:pointer;
+    }
+    .portal-btn.primary{
+      background:var(--accent,#6d5dfc);
+      color:#fff;
+      border-color:var(--accent,#6d5dfc);
+    }
+    .portal-btn[disabled]{opacity:.5;cursor:not-allowed}
+    @media print{
+      body{background:#fff}
+      .portal{max-width:none;margin:0;padding:0}
+      .preview-note,.action-card{display:none!important}
+      .contract-sheet{box-shadow:none;border:none;min-height:auto;padding:40px 36px}
+    }
+    @media(max-width:760px){
+      .portal{margin:12px auto;padding:0 10px 24px}
+      .contract-sheet{padding:28px 18px 24px;min-height:auto}
+      .contract-top{grid-template-columns:1fr;gap:18px}
+      .brand-wrap{text-align:left}
+      .brand-logo{margin-left:0}
+      .meta-row{justify-content:flex-start}
+      .meta-block{text-align:left}
+      .contract-title{font-size:22px}
+      .details-table,.details-table tbody,.details-table tr,.details-table th,.details-table td{display:block;width:100%}
+      .details-table tr{margin-bottom:14px}
+      .details-table th{padding:0 0 4px;text-align:left}
+      .sheet-footer{margin-top:48px;flex-direction:column;align-items:flex-start}
+      .thankyou{text-align:left;white-space:normal}
+      .controls{align-items:stretch}
+      .controls-right{justify-content:flex-start}
+    }
+  </style>
+</head>
+<body>
+  <div class="portal">
+    <div id="previewBanner"></div>
+    <div id="content" class="missing-note">Loading booking…</div>
+  </div>
+<script>
+const $ = s => document.querySelector(s);
+const LS = 'eventflow_crm_v1';
+const id = new URLSearchParams(location.search).get('booking');
+let mode = 'local';
+let payload = null;
+
+const money = (n, c = 'GBP') => new Intl.NumberFormat('en-GB', { style:'currency', currency:c }).format(Number(n || 0));
+const dateFmt = v => v ? new Intl.DateTimeFormat('en-GB', { day:'2-digit', month:'long', year:'numeric' }).format(new Date(v + 'T12:00:00')) : '—';
+const currentDateFmt = () => new Intl.DateTimeFormat('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' }).format(new Date());
+const esc = v => String(v ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const customerName = c => {
+  const p = [c?.title, c?.firstName, c?.surname].filter(Boolean).join(' ').trim();
+  return p || c?.name || c?.company || '';
+};
+
+function decodeSnapshot(){
+  try {
+    const raw = new URLSearchParams(location.hash.replace(/^#/, '')).get('snapshot');
+    if (!raw) return null;
+    let b64 = raw.replace(/-/g,'+').replace(/_/g,'/');
+    while (b64.length % 4) b64 += '=';
+    const bin = atob(b64);
+    const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(bytes));
+  } catch {
+    return null;
+  }
+}
+
+function joinAddressLines(lines){
+  return lines.filter(Boolean).join('\n');
+}
+
+function formatRecipientAddress(customer, booking){
+  const c = customer || {};
+  const lines = [
+    customerName(c) || booking?.customerName || '',
+    c.company || '',
+    c.street1 || '',
+    c.street2 || '',
+    c.town || '',
+    c.county || '',
+    c.postcode || '',
+    c.country && c.country !== 'United Kingdom' ? c.country : ''
+  ].filter(Boolean);
+  return joinAddressLines(lines) || 'Customer address not yet entered';
+}
+
+function bookingReference(booking){
+  const safeDate = (booking?.eventDate || '').replace(/[^0-9-]/g,'') || 'undated';
+  const baseName = (booking?.customerName || customerName(payload?.customer) || booking?.eventContact || booking?.title || 'booking')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g,'-')
+    .replace(/^-+|-+$/g,'')
+    .slice(0, 18) || 'booking';
+  return `${safeDate}-${baseName}`;
+}
+
+function timingText(booking){
+  const start = booking?.startTime || 'TBC';
+  const finish = booking?.noFinishTime ? 'No finish time' : (booking?.finishTime || booking?.endTime || 'TBC');
+  const arrival = booking?.arrivalTime ? ` (Arrive at ${booking.arrivalTime})` : '';
+  if (booking?.noFinishTime) return `${start} onwards${arrival}`;
+  return `${start} - ${finish}${arrival}`;
+}
+
+function detailRows(booking, customer, settings){
+  const rows = [
+    ['Date', dateFmt(booking.eventDate)],
+    ['Event', booking.title || '—'],
+    ['Entertainment', booking.serviceName || '—'],
+    ['Venue', [booking.venueName || booking.venue || '', booking.venueAddress || '', booking.venuePostcode || ''].filter(Boolean).join(', ') || '—'],
+    ['No. of Guests', booking.guestCount ? String(booking.guestCount) : ''],
+    ['Dress Code', booking.dressCode || ''],
+    ['Event Contact', [booking.eventContact || customerName(customer) || booking.customerName || '', booking.eventTelephone ? `- ${booking.eventTelephone}` : ''].filter(Boolean).join(' ') || '—'],
+    ['Timings', timingText(booking)],
+    ['Fee', money(booking.fee || 0, settings.currency || 'GBP')],
+    ['Grand Total', money(booking.grandTotal ?? booking.total ?? 0, settings.currency || 'GBP')],
+    ['Deposit', money(booking.deposit || 0, settings.currency || 'GBP')],
+    ['Notes', booking.paymentInstructions || booking.venueNotes || '']
+  ];
+  return rows.map((row, i) => {
+    const spacerClass = [4,8].includes(i) ? ' class="spacer-row"' : '';
+    const valueClass = row[0] === 'Notes' ? ' class="notes-value"' : '';
+    return `<tr${spacerClass}><th>${esc(row[0])}</th><td${valueClass}>${esc(row[1] || '')}</td></tr>`;
+  }).join('');
+}
+
+function invoiceBlock(invoices, settings){
+  if (!invoices?.length) return '';
+  return `<div class="invoices-block">
+    <h3 class="section-kicker">Invoices</h3>
+    ${invoices.map(i => `
+      <div class="invoice-item">
+        <div>
+          <b>${esc(i.number || i.type || 'Invoice')}</b>
+          <div class="invoice-meta">${esc(i.type || 'Invoice')} · due ${esc(dateFmt(i.dueDate))} · ${esc(i.status || 'Draft')}</div>
+        </div>
+        <div><b>${esc(money(i.amount || 0, settings.currency || 'GBP'))}</b></div>
+      </div>`).join('')}
+  </div>`;
+}
+
+async function init(){
+  if (!id) {
+    $('#content').innerHTML = '<div class="missing-note"><b>No booking reference supplied.</b></div>';
+    return;
+  }
+
+  const snap = decodeSnapshot();
+  if (snap?.booking?.id === id) {
+    payload = snap;
+    mode = 'snapshot';
+  }
+
+  if (!payload && location.protocol !== 'file:') {
+    try {
+      const r = await fetch('/api/public/booking/' + encodeURIComponent(id));
+      if (r.ok) {
+        payload = await r.json();
+        mode = 'api';
+      }
+    } catch {}
+  }
+
+  if (!payload) {
+    let d;
+    try { d = JSON.parse(localStorage.getItem(LS)); } catch {}
+    if (!d) {
+      try {
+        const r = await fetch('data/db.json');
+        if (r.ok) d = await r.json();
+      } catch {}
+    }
+    if (d) {
+      const b = (d.bookings || []).find(x => x.id === id);
+      if (b) {
+        payload = {
+          settings:d.settings,
+          booking:b,
+          customer:(d.customers || []).find(x => x.id === b.customerId),
+          invoices:(d.invoices || []).filter(x => x.bookingId === b.id)
+        };
+      }
+    }
+  }
+
+  if (!payload) {
+    $('#content').innerHTML = '<div class="missing-note"><b>Booking not found.</b><p style="color:#667085">This booking is not available from this browser. Live client links require the CRM to be running on its shared server.</p></div>';
+    return;
+  }
+
+  render();
+}
+
+function render(){
+  const { settings:s = {}, booking:b, customer:c = {}, invoices = [] } = payload;
+  document.documentElement.style.setProperty('--accent', s.accent || '#6d5dfc');
+
+  $('#previewBanner').innerHTML = mode === 'snapshot'
+    ? '<div class="preview-note"><b>Local preview only.</b> This copy is not connected to the CRM server. It lets you check the contract layout, but acceptance here will not update the main CRM.</div>'
+    : '';
+
+  const contractAccepted = b.contractStatus === 'Accepted' || b.status === 'Confirmed';
+  const statusClass = contractAccepted ? 'status-pill success' : 'status-pill';
+  const recipient = formatRecipientAddress(c, b);
+
+  $('#content').className = '';
+  $('#content').innerHTML = `
+    <div class="contract-sheet" id="printSheet">
+      <div class="contract-top">
+        <div class="recipient-address">${esc(recipient)}</div>
+        <div class="brand-wrap">
+          ${s.logoUrl ? `<img class="brand-logo" src="${esc(s.logoUrl)}" alt="${esc(s.businessName || 'Business logo')}">` : `<p class="brand-name">${esc(s.businessName || 'Your Event Business')}</p>`}
+        </div>
+      </div>
+
+      <div class="meta-row">
+        <div class="meta-block">
+          <div>${esc(currentDateFmt())}</div>
+          <div>${esc(bookingReference(b))}</div>
+        </div>
+      </div>
+
+      <h1 class="contract-title">Booking confirmation</h1>
+      <hr class="title-rule">
+
+      <table class="details-table">
+        <tbody>
+          ${detailRows(b, c, s)}
+        </tbody>
+      </table>
+
+      <div class="terms-block">
+        <h3 class="section-kicker">Booking terms</h3>
+        <div class="terms-copy">${esc(s.terms || 'Please review the booking details above. By accepting, you confirm that the information is correct and agree to the booking terms.')}</div>
+      </div>
+
+      ${invoiceBlock(invoices, s)}
+
+      <div class="sheet-footer">
+        <div class="signature-box">
+          <div class="signature-title">Please sign and return</div>
+          <div class="signature-line">Signature</div>
+          <div class="signature-line">Date</div>
+        </div>
+        <div class="thankyou">Thank you for your business</div>
+      </div>
+    </div>
+
+    <div class="action-card">
+      <div class="action-head">
+        <div>
+          <h3>Booking acceptance</h3>
+          <div class="action-sub">Review the booking information above, then confirm online below.</div>
+        </div>
+        <div class="${statusClass}">${contractAccepted ? 'Accepted' : (b.contractStatus || 'Pending')}</div>
+      </div>
+
+      ${contractAccepted
+        ? `<div class="success-box" style="padding:14px;background:#eaf8f3;color:#138a60;border-radius:10px"><b>Booking confirmed.</b> Thank you. ${b.contractAcceptedAt ? `Accepted on ${esc(new Intl.DateTimeFormat('en-GB',{dateStyle:'medium',timeStyle:'short'}).format(new Date(b.contractAcceptedAt)))}` : ''}</div>`
+        : `<div class="controls">
+            <div class="controls-left">
+              <label class="agree-row"><input id="agree" type="checkbox"> <span>I agree to the booking terms and confirm that the booking details above are correct.</span></label>
+            </div>
+            <div class="controls-right">
+              <button class="portal-btn" id="printBtn" type="button">Print / Save PDF</button>
+              <button class="portal-btn primary" id="confirm" type="button">Accept & confirm booking</button>
+            </div>
+          </div>`
+      }
+
+      ${contractAccepted ? `<div class="controls" style="margin-top:14px"><div class="controls-right"><button class="portal-btn" id="printBtn" type="button">Print / Save PDF</button></div></div>` : ''}
+    </div>
+  `;
+
+  $('#printBtn').onclick = () => window.print();
+  if ($('#confirm')) $('#confirm').onclick = confirmBooking;
+}
+
+async function confirmBooking(){
+  if (!$('#agree').checked) return alert('Please tick the box to accept the terms.');
+  if (mode === 'api') {
+    const r = await fetch('/api/public/booking/' + encodeURIComponent(id) + '/confirm', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ name: customerName(payload.customer) || payload.booking.customerName })
+    });
+    if (!r.ok) return alert('Could not confirm booking');
+    payload.booking = (await r.json()).booking;
+  } else if (mode === 'snapshot') {
+    payload.booking = { ...payload.booking, status:'Confirmed', contractStatus:'Accepted', contractAcceptedAt:new Date().toISOString() };
+    alert('Preview accepted. This is only a local preview and has not updated the CRM. Live acceptance requires the hosted server version.');
+  } else {
+    const d = JSON.parse(localStorage.getItem(LS));
+    const b = (d.bookings || []).find(x => x.id === id);
+    if (!b) return alert('Booking not found in this browser.');
+    b.status = 'Confirmed';
+    b.contractStatus = 'Accepted';
+    b.contractAcceptedAt = new Date().toISOString();
+    localStorage.setItem(LS, JSON.stringify(d));
+    payload.booking = b;
+  }
+  render();
+}
+
+init();
+</script>
+</body>
+</html>
